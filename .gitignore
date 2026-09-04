@@ -1,0 +1,28 @@
+# Gradle / build
+.gradle/
+build/
+app/build/
+captures/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Local config & secrets — do NOT commit
+local.properties
+keystore.properties
+*.keystore
+*.jks
+
+# Build artifacts at repo root
+/EpicHypernova-debug.apk
+/EpicHypernova-release.aab
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep the wrapper jar tracked
+!gradle/wrapper/gradle-wrapper.jar

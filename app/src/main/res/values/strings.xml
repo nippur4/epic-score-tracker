@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Epic Hypernova</string>
+
+    <!-- Tabs -->
+    <string name="tab_games">Juegos</string>
+    <string name="tab_history">Historial</string>
+    <string name="tab_players">Jugadores</string>
+
+    <!-- Common -->
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="done">Listo</string>
+    <string name="delete">Eliminar</string>
+    <string name="coming_soon">Próximamente</string>
+
+    <!-- Menu -->
+    <string name="menu_section_generics">Genéricos</string>
+    <string name="menu_section_saved">Guardados</string>
+    <string name="menu_section_specific">Juegos específicos</string>
+    <string name="menu_edit">Editar</string>
+    <string name="en_curso">En curso</string>
+    <string name="hand_n">Mano %1$d</string>
+    <string name="leading_with">%1$s va ganando con</string>
+    <string name="saved_config_detail">%1$d jugadores · %2$d pts · %3$s</string>
+    <string name="search_hint">Buscar un juego</string>
+    <string name="resume_prefix">Retomar %1$s · mano %2$d</string>
+    <string name="open">Abrir</string>
+    <string name="request_game">Pedir un juego</string>
+
+    <!-- Game titles / subtitles -->
+    <string name="game_manos_title">Manos y puntos</string>
+    <string name="game_manos_sub">Basas, chinchón, generala, escoba</string>
+    <string name="game_contador_title">Contador simple</string>
+    <string name="game_contador_sub">Sumar y restar, sin manos</string>
+    <string name="game_truco_title">Truco</string>
+    <string name="game_truco_sub">Porotos, 30 puntos, partidos</string>
+    <string name="game_magic_title">Magic: The Gathering</string>
+    <string name="game_magic_sub">Vidas, veneno, commander</string>
+    <string name="game_pokemon_title">Pokémon TCG</string>
+    <string name="game_pokemon_sub">Premios, marcadores de daño</string>
+    <string name="game_yugioh_title">Yu-Gi-Oh!</string>
+    <string name="game_yugioh_sub">Life points 8000</string>
+    <string name="game_digimon_title">Digimon TCG</string>
+    <string name="game_digimon_sub">Memoria, seguridad</string>
+    <string name="game_magic_short">Magic</string>
+
+    <!-- Generic setup -->
+    <string name="new_game">Nueva partida</string>
+    <string name="players_label">Jugadores</string>
+    <string name="players_count">%1$d de 6</string>
+    <string name="rules">Reglas</string>
+    <string name="target_score">Puntaje objetivo</string>
+    <string name="wins">Gana</string>
+    <string name="wins_high">Mayor</string>
+    <string name="wins_low">Menor</string>
+    <string name="fixed_hands">Cantidad de manos fija</string>
+    <string name="fixed_hands_on">%1$d manos y cierra sola</string>
+    <string name="fixed_hands_off">La partida sigue hasta el objetivo</string>
+    <string name="bids">Apuestas declaradas</string>
+    <string name="bids_sub">Pedir basas antes de cada mano</string>
+    <string name="save_config">Guardar esta configuración</string>
+    <string name="save_config_sub">Empezar más rápido la próxima vez</string>
+    <string name="start_game">Empezar partida</string>
+    <string name="add_player_chip">＋ Agregar</string>
+    <string name="add_player_title">Agregar jugador</string>
+    <string name="no_more_players">No hay más jugadores. Creá uno desde la pestaña Jugadores.</string>
+
+    <!-- Generic table -->
+    <string name="table_meta">Mano %1$d · a %2$d · gana el %3$s</string>
+    <string name="wins_menor_word">menor</string>
+    <string name="wins_mayor_word">mayor</string>
+    <string name="load_hand">Cargar mano</string>
+    <string name="finish_game">Terminar partida</string>
+    <string name="no_current_game">No hay partida en curso</string>
+    <string name="leader_note">%1$s va ganando con %2$d · la partida cierra cuando alguien llega a %3$d</string>
+    <string name="bid_pedia">pedía %1$d</string>
+    <string name="bet_points_hint">apuesta / puntos</string>
+    <string name="save_hand">Guardar mano</string>
+
+    <!-- Truco -->
+    <string name="truco_meta_prefix">A 30 · partidos </string>
+    <string name="truco_us">Nosotros</string>
+    <string name="truco_them">Ellos</string>
+    <string name="truco_buenas">Buenas</string>
+    <string name="truco_malas">Malas</string>
+    <string name="truco_remove">− Quitar</string>
+    <string name="truco_undo">Deshacer</string>
+    <string name="truco_new_match">Nuevo partido</string>
+
+    <!-- Magic -->
+    <string name="magic_lives">Vidas %1$d</string>
+    <string name="magic_commander_lives">Commander · %1$d</string>
+    <string name="magic_reset">⟳ Reiniciar</string>
+    <string name="magic_shuffle">⚄ Sortear</string>
+    <string name="magic_eliminated">ELIMINADO</string>
+    <string name="magic_starts">Empieza %1$s</string>
+    <string name="magic_ok">Dale</string>
+    <string name="magic_mode_commander">Commander</string>
+    <string name="magic_mode_1v1">1 vs 1</string>
+
+    <!-- Players -->
+    <string name="players_saved_here">Guardados en este teléfono</string>
+    <string name="players_title">Jugadores</string>
+    <string name="add_player_button">＋ Agregar jugador</string>
+    <string name="games_played">%1$d partidas</string>
+
+    <!-- Edit player -->
+    <string name="new_player">Nuevo jugador</string>
+    <string name="edit_player">Editar jugador</string>
+    <string name="name">Nombre</string>
+    <string name="color">Color</string>
+    <string name="favorite">Jugador frecuente</string>
+    <string name="favorite_sub">Aparece primero al armar partida</string>
+    <string name="delete_player">Eliminar jugador</string>
+    <string name="delete_note">Las partidas jugadas se conservan</string>
+    <string name="delete_confirm_title">¿Eliminar a %1$s?</string>
+    <string name="delete_confirm_text">Las partidas jugadas se conservan en el historial.</string>
+
+    <!-- History -->
+    <string name="history_count">%1$d partidas terminadas</string>
+    <string name="history_title">Historial</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_generics">Genéricos</string>
+    <string name="filter_truco">Truco</string>
+    <string name="filter_magic">Magic</string>
+    <string name="group_this_week">Esta semana</string>
+    <string name="group_before">Antes</string>
+    <string name="won">Ganó</string>
+    <string name="moment_now">hace un rato</string>
+    <string name="moment_hours">hace %1$dh</string>
+    <string name="moment_yesterday">ayer</string>
+    <string name="moment_days">hace %1$d días</string>
+
+    <!-- Settings -->
+    <string name="settings">Ajustes</string>
+    <string name="language">Idioma</string>
+    <string name="language_es">Español</string>
+    <string name="language_en">English</string>
+    <string name="about_version">Epic Hypernova Score Tracker · v1.0.0</string>
+    <string name="about_local">Todos los datos se guardan solo en este dispositivo.</string>
+</resources>
