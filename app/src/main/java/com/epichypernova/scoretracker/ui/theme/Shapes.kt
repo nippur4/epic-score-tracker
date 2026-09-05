@@ -1,6 +1,5 @@
 package com.epichypernova.scoretracker.ui.theme
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
@@ -9,18 +8,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-
-/** Corner radii from the handoff. */
-object Radii {
-    val pill = RoundedCornerShape(999.dp)
-    val card = RoundedCornerShape(16.dp)
-    val cardLg = RoundedCornerShape(20.dp)
-    val icon = RoundedCornerShape(13.dp)
-    val icon11 = RoundedCornerShape(11.dp)
-    val key = RoundedCornerShape(12.dp)
-    val cell = RoundedCornerShape(10.dp)
-    val sheetTop = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-}
 
 /**
  * CTA chamfer, equivalent to the design's

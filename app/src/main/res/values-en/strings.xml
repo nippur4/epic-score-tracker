@@ -16,9 +16,9 @@
 
     <!-- Menu -->
     <string name="menu_section_generics">Generic</string>
-    <string name="menu_section_saved">Saved</string>
+    <string name="menu_section_saved">Custom</string>
+    <string name="config_name_hint">Name the configuration</string>
     <string name="menu_section_specific">Specific games</string>
-    <string name="menu_edit">Edit</string>
     <string name="en_curso">In progress</string>
     <string name="hand_n">Hand %1$d</string>
     <string name="leading_with">%1$s is leading with</string>
@@ -59,6 +59,7 @@
     <string name="fixed_hands_off">The game runs until the target</string>
     <string name="bids">Declared bids</string>
     <string name="bids_sub">Call tricks before each hand</string>
+    <string name="points_per_hit">Points per trick</string>
     <string name="save_config">Save this configuration</string>
     <string name="save_config_sub">Start faster next time</string>
     <string name="start_game">Start game</string>
@@ -70,13 +71,24 @@
     <string name="table_meta">Hand %1$d · to %2$d · %3$s wins</string>
     <string name="wins_menor_word">lowest</string>
     <string name="wins_mayor_word">highest</string>
-    <string name="load_hand">Enter hand</string>
+    <string name="load_points">Enter points</string>
+    <string name="load_bids">Enter bids</string>
+    <string name="save_bids">Save bids</string>
+    <string name="col_bid">Hands to win</string>
+    <string name="col_hits">Hands won</string>
+    <string name="col_extra">Extra</string>
     <string name="finish_game">Finish game</string>
+    <!-- End of game -->
+    <string name="game_over">Game over</string>
+    <string name="winner_one">Winner</string>
+    <string name="winner_many">Winners</string>
+    <string name="final_scores">Final scores</string>
+    <string name="back_to_menu">Back to menu</string>
     <string name="no_current_game">No game in progress</string>
     <string name="leader_note">%1$s is leading with %2$d · the game ends when someone reaches %3$d</string>
-    <string name="bid_pedia">bid %1$d</string>
+    <string name="bid_pedia">said %1$d</string>
     <string name="bet_points_hint">bid / points</string>
-    <string name="save_hand">Save hand</string>
+    <string name="save_hand">Save points</string>
 
     <!-- Truco -->
     <string name="truco_meta_prefix">To 30 · matches </string>
@@ -95,7 +107,13 @@
     <string name="magic_shuffle">⚄ Random</string>
     <string name="magic_eliminated">ELIMINATED</string>
     <string name="magic_starts">%1$s starts</string>
+    <string name="magic_rolling">Rolling…</string>
     <string name="magic_ok">OK</string>
+    <!-- Truco setup -->
+    <string name="truco_how_many">How many?</string>
+    <string name="truco_to_15">To 15</string>
+    <string name="truco_to_30">To 30</string>
+    <string name="start">Start</string>
     <string name="magic_mode_commander">Commander</string>
     <string name="magic_mode_1v1">1 vs 1</string>
 
@@ -110,6 +128,9 @@
     <string name="edit_player">Edit player</string>
     <string name="name">Name</string>
     <string name="color">Color</string>
+    <string name="avatar">Avatar</string>
+    <string name="unlock">Unlock</string>
+    <string name="ad_not_available">Ad not available, try again</string>
     <string name="favorite">Frequent player</string>
     <string name="favorite_sub">Shows first when building a game</string>
     <string name="delete_player">Delete player</string>

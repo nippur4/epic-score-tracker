@@ -9,9 +9,9 @@ object Routes {
 
     const val GENERIC_SETUP = "generic_setup/{gameType}"
     const val GENERIC_TABLE = "generic_table"
+    const val END_GAME = "end_game"
     const val TRUCO = "truco"
-    const val MAGIC_1V1 = "magic_1v1"
-    const val MAGIC_COMMANDER = "magic_commander"
+    const val MAGIC = "magic"
     const val EDIT_PLAYER = "edit_player/{userId}"
 
     fun genericSetup(gameType: String) = "generic_setup/$gameType"

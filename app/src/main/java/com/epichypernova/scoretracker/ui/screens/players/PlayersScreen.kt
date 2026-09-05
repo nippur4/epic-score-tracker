@@ -99,7 +99,7 @@ private fun PlayerCard(user: User, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(user.name, Color(user.color), size = 42, fontSize = 20)
+        Avatar(user.name, Color(user.color), size = 42, fontSize = 20, avatarId = user.avatarId)
         androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

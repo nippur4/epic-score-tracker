@@ -6,8 +6,8 @@
 - **minSdk / targetSdk**: 24 / 35
 - **Bundle a subir**: `EpicHypernova-release.aab` (raíz del proyecto)
 - **Categoría sugerida**: Juegos → Casual / Herramientas de juego
-- **Clasificación de contenido**: Para todos (sin violencia, sin compras, sin anuncios)
-- **Anuncios**: No
+- **Clasificación de contenido**: Para todos (sin violencia, sin compras)
+- **Anuncios**: **Sí** (Google AdMob, banner)
 - **Compras dentro de la app**: No
 
 ## Firma
@@ -74,10 +74,26 @@ Coming soon: Pokémon TCG, Yu-Gi-Oh! and Digimon TCG.
 Ver `PRIVACY.md`. Google Play exige una URL pública de política de privacidad: publicá ese texto
 en cualquier página (por ej. GitHub Pages, Notion público o un Gist) y pegá la URL en la ficha.
 
+## Publicidad (AdMob) — IMPORTANTE antes de publicar
+La app ya integra Google AdMob (banner abajo, en Juegos/Historial/Jugadores), pero con **IDs de
+PRUEBA**. Antes de publicar hay que:
+1. Crear una cuenta en AdMob y registrar la app → obtener el **App ID** real (`ca-app-pub-…~…`) y un
+   **ad unit** de banner real (`ca-app-pub-…/…`).
+2. Reemplazar el App ID en `app/src/main/AndroidManifest.xml` (meta-data
+   `com.google.android.gms.ads.APPLICATION_ID`).
+3. Reemplazar `TEST_BANNER` en `ui/components/BannerAd.kt` por el ad unit real.
+4. (Opcional pero recomendado) implementar el consentimiento (UMP / Google User Messaging Platform)
+   para GDPR/UE.
+> Publicar con los IDs de prueba muestra anuncios de prueba; usar tu propio ID en producción es
+> obligatorio y hacer clic en tus propios anuncios reales está prohibido por AdMob.
+
 ## Data safety (formulario de Play)
-- ¿Recopila o comparte datos del usuario? **No.**
-- Todos los datos (jugadores, partidas, historial) se guardan **solo en el dispositivo** con
-  DataStore local. No hay red, analítica ni terceros.
+- Los datos de la app (jugadores, partidas, historial, idioma) se guardan **solo en el dispositivo**;
+  la app no los recopila ni comparte.
+- **Pero la app muestra anuncios (AdMob)**, así que en el formulario hay que declarar que un SDK de
+  terceros (Google AdMob) recopila/compartir: **ID de publicidad** y, según el caso, interacción con
+  la app / información del dispositivo, con finalidad de **publicidad**. Google provee la guía de
+  Data safety de AdMob para completar esto correctamente.
 
 ## Pasos para publicar
 1. Crear la app en Play Console (idioma por defecto: Español o English).

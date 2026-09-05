@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,18 +77,36 @@ fun Modifier.rowSurface(radius: Int = 12): Modifier = this
     .background(Palette.RowSurface)
     .border(1.dp, Palette.RowBorder, RoundedCornerShape(radius.dp))
 
-/** Circular avatar with a Cinzel monogram over the player color. */
+/** Resolves an avatar number (1..30) to its bundled drawable id, or 0 if missing. */
 @Composable
-fun Avatar(name: String, color: Color, size: Int, fontSize: Int = (size * 0.42f).toInt()) {
-    Box(
-        modifier = Modifier.size(size.dp).clip(CircleShape).background(color),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = name.trim().take(1).uppercase(),
-            color = Palette.OnAccent,
-            style = TextStyle(fontFamily = Cinzel, fontWeight = FontWeight.Bold, fontSize = fontSize.sp),
+fun avatarResId(id: Int?): Int {
+    if (id == null) return 0
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    return remember(id) { ctx.resources.getIdentifier("avatar_$id", "drawable", ctx.packageName) }
+}
+
+/** Circular avatar: bundled image if [avatarId] is set, otherwise a Cinzel monogram over [color]. */
+@Composable
+fun Avatar(name: String, color: Color, size: Int, fontSize: Int = (size * 0.42f).toInt(), avatarId: Int? = null) {
+    val resId = avatarResId(avatarId)
+    if (avatarId != null && resId != 0) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(resId),
+            contentDescription = name,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.size(size.dp).clip(CircleShape).background(color),
         )
+    } else {
+        Box(
+            modifier = Modifier.size(size.dp).clip(CircleShape).background(color),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = name.trim().take(1).uppercase(),
+                color = Palette.OnAccent,
+                style = TextStyle(fontFamily = Cinzel, fontWeight = FontWeight.Bold, fontSize = fontSize.sp),
+            )
+        }
     }
 }
 

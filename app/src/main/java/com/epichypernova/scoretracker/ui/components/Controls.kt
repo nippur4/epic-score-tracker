@@ -7,13 +7,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -194,6 +192,22 @@ fun SecondaryButton(
     }
 }
 
+/** 40dp circular icon button (menu header actions). */
+@Composable
+fun CircleIconButton(glyph: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(Palette.ControlFill)
+            .border(1.dp, Palette.CardBorder, CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(glyph, color = Palette.TextSecondary, style = TextStyle(fontSize = 17.sp))
+    }
+}
+
 /** Pill filter chip (history). */
 @Composable
 fun FilterChip(text: String, active: Boolean, onClick: () -> Unit) {
@@ -216,6 +230,3 @@ fun FilterChip(text: String, active: Boolean, onClick: () -> Unit) {
         )
     }
 }
-
-/** Convenience spacer row helper for consistent horizontal gaps. */
-fun RowScope.hSpace(dp: Int): Modifier = Modifier.width(dp.dp)

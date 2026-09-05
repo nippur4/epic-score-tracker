@@ -1,7 +1,6 @@
 package com.epichypernova.scoretracker.ui.theme
 
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -77,14 +76,4 @@ val CtaBrush: Brush
         0f to Palette.CyanBright,
         0.55f to Palette.Cyan,
         1f to Palette.CyanDeep,
-    )
-
-/** Menu backdrop: radial-gradient(130% 70% at 50% -10%, #1B3768 0%, #0C1730 58%, #0A1327 100%) */
-val MenuBackdropBrush: Brush
-    get() = Brush.radialGradient(
-        0f to Color(0xFF1B3768),
-        0.58f to Palette.AppBg,
-        1f to Palette.AppBgDeep,
-        center = Offset(0.5f, -0.10f),
-        radius = Float.POSITIVE_INFINITY,
     )

@@ -9,14 +9,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Standard 4-based spacing scale used across the app (dp). */
-object Spacing {
-    const val screenPadding = 20
-    const val screenPaddingTable = 16
-    const val rowGap = 8
-    const val sectionGap = 20
-}
-
 private val AppColorScheme = darkColorScheme(
     primary = Palette.Cyan,
     onPrimary = Palette.OnAccent,

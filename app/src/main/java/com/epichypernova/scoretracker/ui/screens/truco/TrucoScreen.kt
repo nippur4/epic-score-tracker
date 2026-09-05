@@ -3,6 +3,8 @@ package com.epichypernova.scoretracker.ui.screens.truco
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,16 +20,19 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +43,10 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.TrucoSide
+import com.epichypernova.scoretracker.ui.components.ChamferCta
 import com.epichypernova.scoretracker.ui.components.CompactHeader
+import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -49,15 +57,19 @@ fun TrucoScreen(
     state: AppState,
     onBack: () -> Unit,
 ) {
-    LaunchedEffect(Unit) { repo.update { AppActions.trucoEnsure(it) } }
-    val match = state.trucoMatch ?: return
+    val match = state.trucoMatch
+    if (match == null) {
+        TrucoChooser(onBack = onBack, onStart = { target -> repo.update { AppActions.trucoStart(it, target) } })
+        return
+    }
+    val whoosh = rememberSoundEffect(R.raw.whoosh)
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         CompactHeader(
             title = stringResource(R.string.game_truco_title),
             meta = {
                 Row {
-                    Text(stringResource(R.string.truco_meta_prefix), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
+                    Text("A ${match.target} · ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
                     Text("${match.us.gamesWon}", color = Palette.Cyan, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
                     Text(" – ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
                     Text("${match.them.gamesWon}", color = Palette.Magenta, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
@@ -72,7 +84,8 @@ fun TrucoScreen(
                 label = stringResource(R.string.truco_us),
                 accent = Palette.TrucoUs,
                 side = match.us,
-                onAdd = { n -> repo.update { AppActions.trucoAdd(it, us = true, amount = n) } },
+                target = match.target,
+                onAdd = { n -> whoosh(); repo.update { AppActions.trucoAdd(it, us = true, amount = n) } },
                 onRemove = { repo.update { AppActions.trucoRemove(it, us = true) } },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
@@ -81,13 +94,13 @@ fun TrucoScreen(
                 label = stringResource(R.string.truco_them),
                 accent = Palette.TrucoThem,
                 side = match.them,
-                onAdd = { n -> repo.update { AppActions.trucoAdd(it, us = false, amount = n) } },
+                target = match.target,
+                onAdd = { n -> whoosh(); repo.update { AppActions.trucoAdd(it, us = false, amount = n) } },
                 onRemove = { repo.update { AppActions.trucoRemove(it, us = false) } },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )
         }
 
-        // Footer
         Row(
             Modifier.fillMaxWidth().background(Palette.AppBgDeep).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -99,31 +112,77 @@ fun TrucoScreen(
 }
 
 @Composable
+private fun TrucoChooser(onBack: () -> Unit, onStart: (Int) -> Unit) {
+    var idx by remember { mutableStateOf(1) } // 0 = 15, 1 = 30
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+        CompactHeader(title = stringResource(R.string.game_truco_title), meta = {}, onBack = onBack, trailing = null)
+        Column(
+            Modifier.weight(1f).fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(stringResource(R.string.truco_how_many), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 18.sp))
+            Segmented(
+                options = listOf(stringResource(R.string.truco_to_15), stringResource(R.string.truco_to_30)),
+                selectedIndex = idx,
+                onSelect = { idx = it },
+                modifier = Modifier.padding(top = 18.dp).width(260.dp),
+            )
+            ChamferCta(
+                text = stringResource(R.string.start),
+                onClick = { onStart(if (idx == 0) 15 else 30) },
+                modifier = Modifier.padding(top = 24.dp).width(220.dp),
+            )
+        }
+    }
+}
+
+@Composable
 private fun TrucoSideView(
     label: String,
     accent: Color,
     side: TrucoSide,
+    target: Int,
     onAdd: (Int) -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val malas = side.points.coerceIn(0, 15)
-    val buenas = (side.points - 15).coerceIn(0, 15)
+    val to30 = target >= 30
+    val malas = side.points.coerceIn(0, if (to30) 15 else target)
+    val buenas = if (to30) (side.points - 15).coerceIn(0, 15) else 0
     val numberColor = if (accent == Palette.TrucoUs) Palette.CyanNumber else Palette.MagentaNumber
 
     Column(
-        modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier
+            .pointerInput(Unit) { detectTapGestures(onDoubleTap = { onAdd(1) }) }
+            .pointerInput(Unit) {
+                var acc = 0f; var fired = false
+                detectVerticalDragGestures(
+                    onDragStart = { acc = 0f; fired = false },
+                    onVerticalDrag = { _, dy ->
+                        acc += dy
+                        if (!fired && acc < -50f) { onAdd(1); fired = true }
+                    },
+                )
+            }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(label.uppercase(), color = accent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 10.sp, letterSpacing = 2.0.sp))
         Text("${side.points}", color = numberColor, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 60.sp, fontFeatureSettings = "tnum"))
 
         Spacer8()
-        PorotoLabel(stringResource(R.string.truco_buenas))
-        PorotoField(count = buenas, color = Palette.PorotoStick)
-        Box(Modifier.fillMaxWidth().height(1.dp).padding(vertical = 4.dp).background(accent.copy(alpha = 0.55f)))
-        PorotoLabel(stringResource(R.string.truco_malas))
-        PorotoField(count = malas, color = Palette.PorotoStick)
+        if (to30) {
+            // Malas on top, Buenas below (a 30)
+            PorotoLabel(stringResource(R.string.truco_malas))
+            PorotoField(count = malas, color = Palette.PorotoStick)
+            Box(Modifier.fillMaxWidth().height(1.dp).padding(vertical = 4.dp).background(accent.copy(alpha = 0.55f)))
+            PorotoLabel(stringResource(R.string.truco_buenas))
+            PorotoField(count = buenas, color = Palette.PorotoStick)
+        } else {
+            PorotoLabel(stringResource(R.string.truco_malas))
+            PorotoField(count = malas, color = Palette.PorotoStick)
+        }
 
         Spacer8()
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -153,11 +212,10 @@ private fun PorotoLabel(text: String) {
 @Composable
 private fun Spacer8() = Box(Modifier.height(10.dp))
 
-/** Renders [count] porotos as groups of 5 (complete groups get the crossed 5th stick). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PorotoField(count: Int, color: Color) {
-    Box(Modifier.fillMaxWidth().heightIn(min = 96.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().heightIn(min = 84.dp), contentAlignment = Alignment.Center) {
         if (count == 0) {
             Text("—", color = Palette.PorotoEmpty, style = TextStyle(fontSize = 20.sp))
         } else {

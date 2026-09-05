@@ -24,6 +24,7 @@ data class User(
     val color: Long,          // ARGB as Long, e.g. 0xFF2FD3F0
     val favorite: Boolean = false,
     val gamesPlayed: Int = 0,
+    val avatarId: Int? = null, // 1..30 → drawable avatar_N; null = colored initial
 )
 
 /** Rules for a generic (hands & points) game. */
@@ -33,6 +34,7 @@ data class GenericRules(
     val lowWins: Boolean = true,
     val fixedHands: Int? = null,     // null = open-ended
     val bidsEnabled: Boolean = false,
+    val pointsPerHit: Int = 1,       // "basas": points earned per acierto
 )
 
 /** A saved reusable configuration for a generic game. */
@@ -45,12 +47,20 @@ data class SavedConfig(
     val rules: GenericRules,
 )
 
-/** One player's entry within a round. */
+/**
+ * One player's entry within a round.
+ * - Simple games: [points] is typed directly.
+ * - "Basas" games: [bid] is declared first, then [hits] (aciertos) and [extra] are entered;
+ *   [points] = hits * rules.pointsPerHit + extra.
+ * A round whose cells have [hits] == null (while bids are enabled) is "points-pending".
+ */
 @Serializable
 data class Cell(
     val playerId: String,
     val points: Int,
     val bid: Int? = null,
+    val hits: Int? = null,
+    val extra: Int? = null,
 )
 
 /** One played hand/round. */
@@ -91,13 +101,11 @@ data class TrucoEvent(
 data class TrucoMatch(
     val us: TrucoSide = TrucoSide(),
     val them: TrucoSide = TrucoSide(),
+    val target: Int = 30,              // 15 (solo malas) or 30 (malas + buenas)
     val history: List<TrucoEvent> = emptyList(),
 )
 
 // ---- Magic ----
-
-@Serializable
-enum class MagicMode { ONE_V_ONE, COMMANDER }
 
 @Serializable
 data class MagicPlayer(
@@ -106,15 +114,16 @@ data class MagicPlayer(
     val life: Int,
     val poison: Int = 0,
     val energy: Int = 0,
-    val commanderDamage: Int = 0,
+    val experience: Int = 0,          // commander only
     val eliminated: Boolean = false,
 )
 
 @Serializable
 data class MagicGame(
-    val mode: MagicMode,
+    val commander: Boolean,
     val players: List<MagicPlayer>,
     val startingLife: Int,
+    val finished: Boolean = false,
 )
 
 // ---- History ----
@@ -128,6 +137,25 @@ data class HistoryEntry(
     val winnerNames: List<String>,
     val summary: String,
     val finishedAt: Long,
+)
+
+// ---- End-of-game result (shown on the winner screen) ----
+
+@Serializable
+data class ResultLine(
+    val name: String,
+    val value: String,
+    val color: Long,
+    val winner: Boolean = false,
+)
+
+@Serializable
+data class GameResult(
+    val gameType: GameType,
+    val title: String,
+    val winners: List<String>,
+    val lines: List<ResultLine>,
+    val summary: String,
 )
 
 // ---- Settings ----
@@ -147,4 +175,6 @@ data class AppState(
     val magicGame: MagicGame? = null,
     val history: List<HistoryEntry> = emptyList(),
     val settings: Settings = Settings(),
+    val pendingResult: GameResult? = null,
+    val unlockedAvatars: Set<Int> = setOf(1, 2, 12, 24),
 )

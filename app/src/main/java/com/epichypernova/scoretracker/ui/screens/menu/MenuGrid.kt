@@ -43,6 +43,7 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.GameEntry
+import com.epichypernova.scoretracker.ui.components.CircleIconButton
 import com.epichypernova.scoretracker.ui.components.GlyphBox
 import com.epichypernova.scoretracker.ui.components.dashedBorder
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -86,8 +87,8 @@ fun MenuGridContent(
                 modifier = Modifier.width(196.dp).aspectRatio(1993f / 789f),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Circle("▤", onToggleView)
-                Circle("⚙", onOpenSettings)
+                CircleIconButton("▤", onToggleView)
+                CircleIconButton("⚙", onOpenSettings)
             }
         }
 
@@ -203,13 +204,3 @@ private fun SpecificTile(entry: GameEntry, title: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun Circle(glyph: String, onClick: () -> Unit) {
-    Box(
-        Modifier.size(40.dp).clip(CircleShape).background(Palette.ControlFill)
-            .border(1.dp, Palette.CardBorder, CircleShape).clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(glyph, color = Palette.TextSecondary, style = TextStyle(fontSize = 17.sp))
-    }
-}

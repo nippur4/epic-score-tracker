@@ -1,6 +1,7 @@
 package com.epichypernova.scoretracker.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
@@ -9,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.AppTab
@@ -25,6 +27,13 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         AppTab.HISTORIAL to stringResource(R.string.tab_history),
         AppTab.JUGADORES to stringResource(R.string.tab_players),
     )
+
+    // Any game that finishes sets pendingResult → show the winner screen.
+    LaunchedEffect(state.pendingResult) {
+        if (state.pendingResult != null) {
+            navController.navigate(Routes.END_GAME) { launchSingleTop = true }
+        }
+    }
 
     fun goTab(tab: AppTab) {
         val route = when (tab) {
@@ -50,12 +59,14 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                 onOpenSpecific = { gt ->
                     when (gt) {
                         GameType.TRUCO -> navController.navigate(Routes.TRUCO)
-                        GameType.MAGIC -> navController.navigate(Routes.MAGIC_1V1)
+                        GameType.MAGIC -> navController.navigate(Routes.MAGIC)
                         else -> Unit
                     }
                 },
-                onEditConfigs = { },
-                onStartConfig = { navController.navigate(Routes.GENERIC_TABLE) },
+                onStartConfig = { cfg ->
+                    repo.update { AppActions.startFromConfig(it, cfg) }
+                    navController.navigate(Routes.GENERIC_TABLE)
+                },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
@@ -108,7 +119,16 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
             com.epichypernova.scoretracker.ui.screens.generic.GenericTableScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
-                onFinished = { navController.popBackStack(Routes.MENU, false) },
+            )
+        }
+
+        composable(Routes.END_GAME) {
+            com.epichypernova.scoretracker.ui.screens.generic.EndGameScreen(
+                state = state,
+                onDone = {
+                    repo.update { AppActions.clearResult(it) }
+                    navController.popBackStack(Routes.MENU, false)
+                },
             )
         }
 
@@ -118,19 +138,10 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
             )
         }
 
-        composable(Routes.MAGIC_1V1) {
+        composable(Routes.MAGIC) {
             com.epichypernova.scoretracker.ui.screens.magic.MagicScreen(
-                repo = repo, state = state, commander = false,
+                repo = repo, state = state,
                 onBack = { navController.popBackStack() },
-                onSwitchMode = { navController.navigate(Routes.MAGIC_COMMANDER) { popUpTo(Routes.MENU) } },
-            )
-        }
-
-        composable(Routes.MAGIC_COMMANDER) {
-            com.epichypernova.scoretracker.ui.screens.magic.MagicScreen(
-                repo = repo, state = state, commander = true,
-                onBack = { navController.popBackStack() },
-                onSwitchMode = { navController.navigate(Routes.MAGIC_1V1) { popUpTo(Routes.MENU) } },
             )
         }
     }

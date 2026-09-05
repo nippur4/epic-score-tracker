@@ -16,9 +16,9 @@
 
     <!-- Menu -->
     <string name="menu_section_generics">Genéricos</string>
-    <string name="menu_section_saved">Guardados</string>
+    <string name="menu_section_saved">Personalizados</string>
+    <string name="config_name_hint">Poné un nombre a la configuración</string>
     <string name="menu_section_specific">Juegos específicos</string>
-    <string name="menu_edit">Editar</string>
     <string name="en_curso">En curso</string>
     <string name="hand_n">Mano %1$d</string>
     <string name="leading_with">%1$s va ganando con</string>
@@ -59,6 +59,7 @@
     <string name="fixed_hands_off">La partida sigue hasta el objetivo</string>
     <string name="bids">Apuestas declaradas</string>
     <string name="bids_sub">Pedir basas antes de cada mano</string>
+    <string name="points_per_hit">Puntaje por acierto</string>
     <string name="save_config">Guardar esta configuración</string>
     <string name="save_config_sub">Empezar más rápido la próxima vez</string>
     <string name="start_game">Empezar partida</string>
@@ -70,13 +71,24 @@
     <string name="table_meta">Mano %1$d · a %2$d · gana el %3$s</string>
     <string name="wins_menor_word">menor</string>
     <string name="wins_mayor_word">mayor</string>
-    <string name="load_hand">Cargar mano</string>
+    <string name="load_points">Cargar puntos</string>
+    <string name="load_bids">Cargar apuestas</string>
+    <string name="save_bids">Guardar apuestas</string>
+    <string name="col_bid">Manos a ganar</string>
+    <string name="col_hits">Manos ganadas</string>
+    <string name="col_extra">Extra</string>
     <string name="finish_game">Terminar partida</string>
+    <!-- End of game -->
+    <string name="game_over">Fin de la partida</string>
+    <string name="winner_one">Ganó</string>
+    <string name="winner_many">Ganaron</string>
+    <string name="final_scores">Puntajes finales</string>
+    <string name="back_to_menu">Volver al menú</string>
     <string name="no_current_game">No hay partida en curso</string>
     <string name="leader_note">%1$s va ganando con %2$d · la partida cierra cuando alguien llega a %3$d</string>
-    <string name="bid_pedia">pedía %1$d</string>
+    <string name="bid_pedia">dijo %1$d</string>
     <string name="bet_points_hint">apuesta / puntos</string>
-    <string name="save_hand">Guardar mano</string>
+    <string name="save_hand">Guardar puntos</string>
 
     <!-- Truco -->
     <string name="truco_meta_prefix">A 30 · partidos </string>
@@ -95,7 +107,13 @@
     <string name="magic_shuffle">⚄ Sortear</string>
     <string name="magic_eliminated">ELIMINADO</string>
     <string name="magic_starts">Empieza %1$s</string>
+    <string name="magic_rolling">Sorteando…</string>
     <string name="magic_ok">Dale</string>
+    <!-- Truco setup -->
+    <string name="truco_how_many">¿A cuántos?</string>
+    <string name="truco_to_15">A 15</string>
+    <string name="truco_to_30">A 30</string>
+    <string name="start">Empezar</string>
     <string name="magic_mode_commander">Commander</string>
     <string name="magic_mode_1v1">1 vs 1</string>
 
@@ -110,6 +128,9 @@
     <string name="edit_player">Editar jugador</string>
     <string name="name">Nombre</string>
     <string name="color">Color</string>
+    <string name="avatar">Avatar</string>
+    <string name="unlock">Desbloquear</string>
+    <string name="ad_not_available">Publicidad no disponible, probá de nuevo</string>
     <string name="favorite">Jugador frecuente</string>
     <string name="favorite_sub">Aparece primero al armar partida</string>
     <string name="delete_player">Eliminar jugador</string>

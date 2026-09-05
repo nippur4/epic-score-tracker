@@ -89,5 +89,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Ads (Google AdMob)
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

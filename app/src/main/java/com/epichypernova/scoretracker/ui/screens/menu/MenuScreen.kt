@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -43,6 +45,7 @@ import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.SavedConfig
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.components.AppTab
+import com.epichypernova.scoretracker.ui.components.CircleIconButton
 import com.epichypernova.scoretracker.ui.components.GameRow
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.TabScaffold
@@ -60,7 +63,6 @@ fun MenuScreen(
     onOpenCurrent: () -> Unit,
     onStartGeneric: (GameType) -> Unit,
     onOpenSpecific: (GameType) -> Unit,
-    onEditConfigs: () -> Unit,
     onStartConfig: (SavedConfig) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -107,22 +109,16 @@ fun MenuScreen(
 
                 if (state.savedConfigs.isNotEmpty()) {
                     item {
-                        Row(
-                            Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            SectionLabel(stringResource(R.string.menu_section_saved))
-                            Text(
-                                stringResource(R.string.menu_edit),
-                                modifier = Modifier.clickable { onEditConfigs() },
-                                color = Palette.Cyan,
-                                style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
-                            )
-                        }
+                        SectionLabel(
+                            stringResource(R.string.menu_section_saved),
+                            modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
+                        )
                     }
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             state.savedConfigs.forEach { cfg ->
                                 SavedConfigCard(cfg, onClick = { onStartConfig(cfg) })
                             }
@@ -160,21 +156,6 @@ private fun MenuHeader(onOpenSettings: () -> Unit, onToggleView: () -> Unit) {
             CircleIconButton("▦", onToggleView)
             CircleIconButton("⚙", onOpenSettings)
         }
-    }
-}
-
-@Composable
-private fun CircleIconButton(glyph: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(Palette.ControlFill)
-            .border(1.dp, Palette.CardBorder, CircleShape)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(glyph, color = Palette.TextSecondary, style = TextStyle(fontSize = 17.sp))
     }
 }
 

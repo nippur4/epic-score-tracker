@@ -24,11 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 
-enum class AppTab(val glyph: String) {
-    JUEGOS("♠"),      // ♠
-    HISTORIAL("◷"),   // ◷
-    JUGADORES("☺");   // ☺
-}
+enum class AppTab { JUEGOS, HISTORIAL, JUGADORES }
 
 @Composable
 fun BottomTabBar(
@@ -59,11 +55,12 @@ fun BottomTabBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    Text(
-                        text = tab.glyph,
-                        color = if (active) Palette.Cyan else Color(0xFF7387AF),
-                        style = TextStyle(fontSize = 17.sp),
-                    )
+                    val iconColor = if (active) Palette.Cyan else Color(0xFF7387AF)
+                    when (tab) {
+                        AppTab.JUEGOS -> GamesTabIcon(iconColor, 21)
+                        AppTab.HISTORIAL -> HistoryTabIcon(iconColor, 21)
+                        AppTab.JUGADORES -> PlayersTabIcon(iconColor, 21)
+                    }
                     Text(
                         text = labels[tab] ?: tab.name,
                         color = if (active) Palette.Cyan else Color(0xFF7387AF),

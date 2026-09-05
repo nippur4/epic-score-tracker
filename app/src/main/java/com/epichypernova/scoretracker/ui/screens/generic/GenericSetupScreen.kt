@@ -80,12 +80,13 @@ fun GenericSetupScreen(
     var fixedHandsOn by remember { mutableStateOf(false) }
     var fixedHands by remember { mutableStateOf(8) }
     var bidsEnabled by remember { mutableStateOf(false) }
+    var pointsPerHit by remember { mutableStateOf(1) }
     var saveConfig by remember { mutableStateOf(false) }
     var configName by remember { mutableStateOf("") }
     var showAdd by remember { mutableStateOf(false) }
 
     val selectedUsers = selectedIds.mapNotNull { id -> state.users.firstOrNull { it.id == id } }
-    val canStart = selectedIds.size >= 2
+    val canStart = selectedIds.size >= 2 && (!saveConfig || configName.isNotBlank())
 
     Column(Modifier.fillMaxSize().background(Palette.AppBg)) {
         BackHeader(title = title, onBack = onBack, overtitle = stringResource(R.string.new_game))
@@ -162,6 +163,16 @@ fun GenericSetupScreen(
                         checked = bidsEnabled,
                         onChange = { bidsEnabled = it },
                     )
+                    if (bidsEnabled) {
+                        Row(
+                            Modifier.fillMaxWidth().cardSurface(16).padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.points_per_hit), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 15.sp))
+                            Stepper(pointsPerHit, onDec = { pointsPerHit = (pointsPerHit - 1).coerceAtLeast(1) }, onInc = { pointsPerHit += 1 })
+                        }
+                    }
                 }
             }
 
@@ -188,6 +199,14 @@ fun GenericSetupScreen(
                             Text("${configName.length}/32", color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
                         }
                         Box(Modifier.fillMaxWidth().height(1.5.dp).padding(top = 6.dp).background(Palette.Cyan))
+                        if (configName.isBlank()) {
+                            Text(
+                                stringResource(R.string.config_name_hint),
+                                color = Palette.PlayerPink,
+                                style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.5.sp),
+                                modifier = Modifier.padding(top = 6.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -206,6 +225,7 @@ fun GenericSetupScreen(
                         lowWins = lowWins,
                         fixedHands = if (hasHands && fixedHandsOn) fixedHands else null,
                         bidsEnabled = hasHands && bidsEnabled,
+                        pointsPerHit = pointsPerHit.coerceAtLeast(1),
                     )
                     repo.update { s ->
                         var next = AppActions.startGeneric(s, gameType, if (saveConfig) configName.ifBlank { title } else title, selectedIds.toList(), rules)
@@ -237,7 +257,7 @@ fun GenericSetupScreen(
                             Modifier.fillMaxWidth().clickable { selectedIds.add(u.id); showAdd = false }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Avatar(u.name, Color(u.color), size = 32, fontSize = 15)
+                            Avatar(u.name, Color(u.color), size = 32, fontSize = 15, avatarId = u.avatarId)
                             Text(u.name, color = Palette.TextPrimary, modifier = Modifier.padding(start = 12.dp))
                         }
                     }
@@ -259,7 +279,7 @@ private fun PlayerChip(user: User, onRemove: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Avatar(user.name, Color(user.color), size = 27, fontSize = 12)
+        Avatar(user.name, Color(user.color), size = 27, fontSize = 12, avatarId = user.avatarId)
         Text(user.name, color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 14.sp))
         Text("✕", color = Palette.TextMuted, modifier = Modifier.clickable { onRemove() }, style = TextStyle(fontSize = 13.sp))
     }

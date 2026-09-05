@@ -1,9 +1,13 @@
 package com.epichypernova.scoretracker.ui.screens.players
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -40,6 +45,8 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.User
 import com.epichypernova.scoretracker.ui.components.Avatar
+import com.epichypernova.scoretracker.ui.components.avatarResId
+import com.epichypernova.scoretracker.ui.components.showRewardedAd
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.AppToggle
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -61,7 +68,9 @@ fun EditPlayerScreen(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var color by remember { mutableStateOf(existing?.color ?: COLOR_OPTIONS.first()) }
     var favorite by remember { mutableStateOf(existing?.favorite ?: false) }
+    var avatarId by remember { mutableStateOf(existing?.avatarId) }
     var confirmDelete by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         Modifier
@@ -90,9 +99,9 @@ fun EditPlayerScreen(
                 style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                 modifier = Modifier.clickable(enabled = name.isNotBlank()) {
                     if (existing == null) {
-                        repo.update { AppActions.addUser(it, name, color, favorite) }
+                        repo.update { AppActions.addUser(it, name, color, favorite, avatarId) }
                     } else {
-                        repo.update { AppActions.updateUser(it, existing.copy(name = name.trim(), color = color, favorite = favorite)) }
+                        repo.update { AppActions.updateUser(it, existing.copy(name = name.trim(), color = color, favorite = favorite, avatarId = avatarId)) }
                     }
                     onClose()
                 },
@@ -106,7 +115,7 @@ fun EditPlayerScreen(
             Spacer(Modifier.height(4.dp))
             // Avatar preview
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Avatar(name.ifBlank { "?" }, Color(color), size = 78, fontSize = 34)
+                Avatar(name.ifBlank { "?" }, Color(color), size = 78, fontSize = 34, avatarId = avatarId)
             }
 
             // Name field with cyan underline
@@ -142,6 +151,45 @@ fun EditPlayerScreen(
                         }
                     }
                 }
+            }
+
+            // Avatar picker (some avatars unlock by watching an ad)
+            Column {
+                SectionLabel(stringResource(R.string.avatar))
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    // "no avatar" option (colored initial)
+                    Box(
+                        Modifier.size(56.dp).clip(CircleShape)
+                            .then(if (avatarId == null) Modifier.border(2.dp, Palette.Cyan, CircleShape) else Modifier)
+                            .background(Color(color)).clickable { avatarId = null },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(name.trim().take(1).ifBlank { "?" }.uppercase(), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 22.sp)) }
+
+                    (1..30).forEach { n ->
+                        val unlocked = n in state.unlockedAvatars
+                        AvatarOption(
+                            number = n,
+                            selected = avatarId == n,
+                            unlocked = unlocked,
+                            onSelect = { avatarId = n },
+                            onUnlock = {
+                                showRewardedAd(
+                                    context,
+                                    onReward = { repo.update { AppActions.unlockAvatar(it, n) }; avatarId = n },
+                                )
+                            },
+                        )
+                    }
+                }
+                Text(
+                    "🔒 " + stringResource(R.string.unlock),
+                    color = Palette.TextTertiary,
+                    style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.5.sp),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
 
             // Favorite toggle
@@ -201,5 +249,35 @@ fun EditPlayerScreen(
             text = { Text(stringResource(R.string.delete_confirm_text), color = Palette.TextTertiary) },
             containerColor = Palette.SheetSurface,
         )
+    }
+}
+
+@Composable
+private fun AvatarOption(
+    number: Int,
+    selected: Boolean,
+    unlocked: Boolean,
+    onSelect: () -> Unit,
+    onUnlock: () -> Unit,
+) {
+    val resId = avatarResId(number)
+    Box(
+        Modifier.size(56.dp).clip(CircleShape)
+            .then(if (selected) Modifier.border(2.dp, Palette.Cyan, CircleShape) else Modifier)
+            .clickable { if (unlocked) onSelect() else onUnlock() },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (resId != 0) {
+            Image(
+                painter = androidx.compose.ui.res.painterResource(resId),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    .then(if (unlocked) Modifier else Modifier.alpha(0.30f)),
+            )
+        }
+        if (!unlocked) {
+            Text("🔒", style = TextStyle(fontSize = 20.sp))
+        }
     }
 }

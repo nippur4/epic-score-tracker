@@ -3,6 +3,7 @@ package com.epichypernova.scoretracker
 import android.app.Application
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.ScoreStore
+import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,5 +24,6 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         ServiceLocator.init(this)
+        runCatching { MobileAds.initialize(this) }
     }
 }

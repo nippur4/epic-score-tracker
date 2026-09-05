@@ -3,11 +3,12 @@ package com.epichypernova.scoretracker.data
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.Cell
 import com.epichypernova.scoretracker.data.model.CurrentGame
+import com.epichypernova.scoretracker.data.model.GameResult
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.GenericRules
+import com.epichypernova.scoretracker.data.model.ResultLine
 import com.epichypernova.scoretracker.data.model.HistoryEntry
 import com.epichypernova.scoretracker.data.model.MagicGame
-import com.epichypernova.scoretracker.data.model.MagicMode
 import com.epichypernova.scoretracker.data.model.MagicPlayer
 import com.epichypernova.scoretracker.data.model.Round
 import com.epichypernova.scoretracker.data.model.SavedConfig
@@ -28,8 +29,8 @@ object AppActions {
 
     // ---------- Players ----------
 
-    fun addUser(s: AppState, name: String, color: Long, favorite: Boolean): AppState {
-        val user = User(newId("u"), name.trim(), color, favorite)
+    fun addUser(s: AppState, name: String, color: Long, favorite: Boolean, avatarId: Int? = null): AppState {
+        val user = User(newId("u"), name.trim(), color, favorite, avatarId = avatarId)
         return s.copy(users = s.users + user)
     }
 
@@ -40,9 +41,9 @@ object AppActions {
     fun deleteUser(s: AppState, id: String): AppState =
         s.copy(users = s.users.filterNot { it.id == id })
 
-    /** Users ordered for game setup: favorites first, then by name. */
-    fun playersForSetup(s: AppState): List<User> =
-        s.users.sortedWith(compareByDescending<User> { it.favorite }.thenBy { it.name.lowercase() })
+    /** Unlocks an avatar (after a rewarded ad). */
+    fun unlockAvatar(s: AppState, id: Int): AppState =
+        s.copy(unlockedAvatars = s.unlockedAvatars + id)
 
     // ---------- Saved configs ----------
 
@@ -59,6 +60,10 @@ object AppActions {
 
     fun deleteConfig(s: AppState, id: String): AppState =
         s.copy(savedConfigs = s.savedConfigs.filterNot { it.id == id })
+
+    /** Starts a fresh generic game from a saved configuration. */
+    fun startFromConfig(s: AppState, config: SavedConfig): AppState =
+        startGeneric(s, config.gameType, config.name, config.playerIds, config.rules)
 
     // ---------- Generic game ----------
 
@@ -81,33 +86,69 @@ object AppActions {
         return s.copy(currentGame = game)
     }
 
-    /** Adds a new round or replaces an existing one (edit). Cells keyed by playerId. */
-    fun saveRound(s: AppState, roundIndex: Int, points: Map<String, Int>, bids: Map<String, Int?>): AppState {
-        val game = s.currentGame ?: return s
-        val cells = game.playerIds.map { pid -> Cell(pid, points[pid] ?: 0, bids[pid]) }
+    private fun putRound(game: CurrentGame, round: Round): CurrentGame {
         val rounds = game.rounds.toMutableList()
-        val existing = rounds.indexOfFirst { it.index == roundIndex }
-        val round = Round(roundIndex, cells)
+        val existing = rounds.indexOfFirst { it.index == round.index }
         if (existing >= 0) rounds[existing] = round else rounds.add(round)
         rounds.sortBy { it.index }
-        return s.copy(currentGame = game.copy(rounds = rounds))
+        return game.copy(rounds = rounds)
     }
 
-    /** Finalises the current generic game: writes a history entry and clears it. */
+    /** Simple games: the user types the points directly for each player. */
+    fun savePoints(s: AppState, roundIndex: Int, points: Map<String, Int>): AppState {
+        val game = s.currentGame ?: return s
+        val cells = game.playerIds.map { pid -> Cell(pid, points[pid] ?: 0) }
+        return s.copy(currentGame = putRound(game, Round(roundIndex, cells)))
+    }
+
+    /** "Basas" phase 1: declare bids. Creates/updates a points-pending round (hits == null). */
+    fun saveBids(s: AppState, roundIndex: Int, bids: Map<String, Int?>): AppState {
+        val game = s.currentGame ?: return s
+        val existing = game.rounds.firstOrNull { it.index == roundIndex }
+        val cells = game.playerIds.map { pid ->
+            val prev = existing?.cells?.firstOrNull { it.playerId == pid }
+            Cell(pid, points = prev?.points ?: 0, bid = bids[pid], hits = prev?.hits, extra = prev?.extra)
+        }
+        return s.copy(currentGame = putRound(game, Round(roundIndex, cells)))
+    }
+
+    /**
+     * "Basas" phase 2: enter manos ganadas (hits) + extra. You score [pointsPerHit] only if your
+     * declared bid matches exactly (bid == hits) — that's one "acierto" — plus the extra points.
+     */
+    fun saveHandPoints(s: AppState, roundIndex: Int, hits: Map<String, Int>, extra: Map<String, Int>): AppState {
+        val game = s.currentGame ?: return s
+        val pph = game.rules.pointsPerHit
+        val existing = game.rounds.firstOrNull { it.index == roundIndex }
+        val cells = game.playerIds.map { pid ->
+            val h = hits[pid] ?: 0
+            val e = extra[pid] ?: 0
+            val prevBid = existing?.cells?.firstOrNull { it.playerId == pid }?.bid
+            val acierto = prevBid != null && prevBid == h
+            Cell(pid, points = (if (acierto) pph else 0) + e, bid = prevBid, hits = h, extra = e)
+        }
+        return s.copy(currentGame = putRound(game, Round(roundIndex, cells)))
+    }
+
+    /** Finalises the current generic game: builds the result, records history, clears the game. */
     fun finishGeneric(s: AppState): AppState {
         val game = s.currentGame ?: return s
         val totals = Derivations.totals(game)
-        val winners = Derivations.leaders(game)
+        val winnerIds = Derivations.leaders(game)
         val nameOf = { id: String -> s.users.firstOrNull { it.id == id }?.name ?: "?" }
+        val colorOf = { id: String -> s.users.firstOrNull { it.id == id }?.color ?: 0xFF2FD3F0 }
+        val ranking = game.playerIds.sortedBy { (totals[it] ?: 0) * (if (game.rules.lowWins) 1 else -1) }
+        val lines = ranking.map { id -> ResultLine(nameOf(id), (totals[id] ?: 0).toString(), colorOf(id), id in winnerIds) }
+        val winnerNames = winnerIds.map(nameOf)
+        val title = game.name ?: "Partida"
+        val summary = title + " · " + winnerNames.joinToString("/") + " · a " + game.rules.targetScore
         val entry = HistoryEntry(
             id = newId("h"),
             gameType = game.gameType,
             playerIds = game.playerIds,
             playerNames = game.playerIds.map(nameOf),
-            winnerNames = winners.map(nameOf),
-            summary = (game.name ?: "Partida") + " · " +
-                winners.joinToString("/") { nameOf(it) } + " " +
-                (winners.firstOrNull()?.let { totals[it] } ?: 0) + " · a " + game.rules.targetScore,
+            winnerNames = winnerNames,
+            summary = summary,
             finishedAt = System.currentTimeMillis(),
         )
         val bumpedUsers = s.users.map {
@@ -117,38 +158,47 @@ object AppActions {
             users = bumpedUsers,
             currentGame = null,
             history = listOf(entry) + s.history,
+            pendingResult = GameResult(game.gameType, title, winnerNames, lines, summary),
         )
     }
 
-    fun discardCurrentGeneric(s: AppState): AppState = s.copy(currentGame = null)
+    /** Dismisses the winner screen. */
+    fun clearResult(s: AppState): AppState = s.copy(pendingResult = null)
 
     // ---------- Truco ----------
 
-    private const val TRUCO_TARGET = 30
+    fun trucoStart(s: AppState, target: Int = 30): AppState = s.copy(trucoMatch = TrucoMatch(target = target))
 
-    fun trucoStart(s: AppState): AppState = s.copy(trucoMatch = TrucoMatch())
-
-    fun trucoEnsure(s: AppState): AppState =
-        if (s.trucoMatch == null) s.copy(trucoMatch = TrucoMatch()) else s
-
-    /** Adds points to a side. On reaching 30 the side wins the match; porotos reset. */
+    /** Adds points to a side. On reaching the target the side wins the partido; shows the winner. */
     fun trucoAdd(s: AppState, us: Boolean, amount: Int): AppState {
-        val m = s.trucoMatch ?: TrucoMatch()
+        val m = s.trucoMatch ?: return s
+        val target = m.target
         val history = m.history + TrucoEvent(m.us, m.them)
         var usSide = m.us
         var themSide = m.them
+        var winnerUs: Boolean? = null
         if (us) {
             val p = usSide.points + amount
-            usSide = if (p >= TRUCO_TARGET) usSide.copy(points = 0, gamesWon = usSide.gamesWon + 1)
-            else usSide.copy(points = p)
-            if (p >= TRUCO_TARGET) themSide = themSide.copy(points = 0)
+            if (p >= target) { usSide = usSide.copy(points = 0, gamesWon = usSide.gamesWon + 1); themSide = themSide.copy(points = 0); winnerUs = true }
+            else usSide = usSide.copy(points = p)
         } else {
             val p = themSide.points + amount
-            themSide = if (p >= TRUCO_TARGET) themSide.copy(points = 0, gamesWon = themSide.gamesWon + 1)
-            else themSide.copy(points = p)
-            if (p >= TRUCO_TARGET) usSide = usSide.copy(points = 0)
+            if (p >= target) { themSide = themSide.copy(points = 0, gamesWon = themSide.gamesWon + 1); usSide = usSide.copy(points = 0); winnerUs = false }
+            else themSide = themSide.copy(points = p)
         }
-        return s.copy(trucoMatch = m.copy(us = usSide, them = themSide, history = history))
+        var ns = s.copy(trucoMatch = m.copy(us = usSide, them = themSide, history = history))
+        if (winnerUs != null) {
+            val usName = "Nosotros"; val themName = "Ellos"
+            val wName = if (winnerUs) usName else themName
+            val lines = listOf(
+                ResultLine(usName, usSide.gamesWon.toString(), 0xFF2FD3F0, winnerUs),
+                ResultLine(themName, themSide.gamesWon.toString(), 0xFFE24BD6, !winnerUs),
+            )
+            val summary = "$usName ${usSide.gamesWon} - ${themSide.gamesWon} $themName"
+            val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), listOf(wName), summary, System.currentTimeMillis())
+            ns = ns.copy(history = listOf(entry) + ns.history, pendingResult = GameResult(GameType.TRUCO, "Truco", listOf(wName), lines, summary))
+        }
+        return ns
     }
 
     fun trucoRemove(s: AppState, us: Boolean): AppState {
@@ -175,20 +225,47 @@ object AppActions {
 
     // ---------- Magic ----------
 
-    fun magicStart(s: AppState, mode: MagicMode): AppState {
-        val life = if (mode == MagicMode.COMMANDER) 40 else 20
-        val palette = listOf(0xFFA18AF5, 0xFF55E6A5, 0xFF2FD3F0, 0xFFFF6FA8)
-        val count = if (mode == MagicMode.COMMANDER) 4 else 2
-        val names = if (mode == MagicMode.COMMANDER) listOf("Vos", "Rival 1", "Rival 2", "Rival 3")
-        else listOf("Vos", "Rival")
-        val players = (0 until count).map { i ->
-            MagicPlayer(name = names[i], color = palette[i], life = life)
-        }
-        return s.copy(magicGame = MagicGame(mode, players, life))
+    private val magicPalette = listOf(0xFFA18AF5, 0xFF55E6A5, 0xFF2FD3F0, 0xFFFF6FA8)
+    private val magicNames = listOf("Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4")
+
+    fun magicStart(s: AppState, count: Int, commander: Boolean, startingLife: Int? = null): AppState {
+        val life = startingLife ?: if (commander) 40 else 20
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i -> MagicPlayer(name = magicNames[i], color = magicPalette[i], life = life) }
+        return s.copy(magicGame = MagicGame(commander, players, life))
     }
 
-    fun magicEnsure(s: AppState, mode: MagicMode): AppState =
-        if (s.magicGame?.mode == mode) s else magicStart(s, mode)
+    fun magicEnsureExists(s: AppState): AppState =
+        if (s.magicGame != null) s else magicStart(s, count = 2, commander = false)
+
+    /** Reconfigure player count / commander, preserving existing players where possible. */
+    fun magicConfigure(s: AppState, count: Int, commander: Boolean): AppState {
+        val g = s.magicGame ?: return magicStart(s, count, commander)
+        val life = if (commander) 40 else 20
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i ->
+            val prev = g.players.getOrNull(i)
+            MagicPlayer(
+                name = prev?.name ?: magicNames[i],
+                color = prev?.color ?: magicPalette[i],
+                life = life,
+            )
+        }
+        return s.copy(magicGame = MagicGame(commander, players, life))
+    }
+
+    fun magicSetLife(s: AppState, startingLife: Int): AppState {
+        val g = s.magicGame ?: return s
+        val life = startingLife.coerceAtLeast(1)
+        return s.copy(magicGame = g.copy(startingLife = life, finished = false, players = g.players.map {
+            it.copy(life = life, poison = 0, energy = 0, experience = 0, eliminated = false)
+        }))
+    }
+
+    fun magicSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.magicGame ?: return s
+        return s.copy(magicGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
 
     private fun MagicGame.mapPlayer(index: Int, f: (MagicPlayer) -> MagicPlayer): MagicGame =
         copy(players = players.mapIndexed { i, p -> if (i == index) recomputeEliminated(f(p)) else p })
@@ -196,14 +273,33 @@ object AppActions {
     private fun recomputeEliminated(p: MagicPlayer): MagicPlayer =
         p.copy(eliminated = p.life <= 0 || p.poison >= 10)
 
+    /** When only one player is left standing, mark finished, record history and show the winner. */
+    private fun checkMagicEnd(s: AppState): AppState {
+        val g = s.magicGame ?: return s
+        if (g.finished || g.players.size <= 1) return s
+        val alive = g.players.filter { !it.eliminated }
+        if (alive.size > 1 || g.players.none { it.eliminated }) return s
+        val winner = alive.firstOrNull()
+        val wName = winner?.name ?: "—"
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
+        val label = if (g.commander) "Commander" else "Magic ${g.players.size}p"
+        val summary = "$label · $wName"
+        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        return s.copy(
+            magicGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.MAGIC, "Magic", listOf(wName), lines, summary),
+        )
+    }
+
     fun magicLife(s: AppState, index: Int, delta: Int): AppState {
         val g = s.magicGame ?: return s
-        return s.copy(magicGame = g.mapPlayer(index) { it.copy(life = it.life + delta) })
+        return checkMagicEnd(s.copy(magicGame = g.mapPlayer(index) { it.copy(life = it.life + delta) }))
     }
 
     fun magicPoison(s: AppState, index: Int, delta: Int): AppState {
         val g = s.magicGame ?: return s
-        return s.copy(magicGame = g.mapPlayer(index) { it.copy(poison = (it.poison + delta).coerceAtLeast(0)) })
+        return checkMagicEnd(s.copy(magicGame = g.mapPlayer(index) { it.copy(poison = (it.poison + delta).coerceAtLeast(0)) }))
     }
 
     fun magicEnergy(s: AppState, index: Int, delta: Int): AppState {
@@ -211,19 +307,15 @@ object AppActions {
         return s.copy(magicGame = g.mapPlayer(index) { it.copy(energy = (it.energy + delta).coerceAtLeast(0)) })
     }
 
-    fun magicCommanderDamage(s: AppState, index: Int, delta: Int): AppState {
+    fun magicExperience(s: AppState, index: Int, delta: Int): AppState {
         val g = s.magicGame ?: return s
-        return s.copy(magicGame = g.mapPlayer(index) {
-            val cd = (it.commanderDamage + delta).coerceAtLeast(0)
-            // commander damage also chips life when increasing
-            it.copy(commanderDamage = cd, life = if (delta > 0) it.life - delta else it.life)
-        })
+        return s.copy(magicGame = g.mapPlayer(index) { it.copy(experience = (it.experience + delta).coerceAtLeast(0)) })
     }
 
     fun magicReset(s: AppState): AppState {
         val g = s.magicGame ?: return s
-        return s.copy(magicGame = g.copy(players = g.players.map {
-            it.copy(life = g.startingLife, poison = 0, energy = 0, commanderDamage = 0, eliminated = false)
+        return s.copy(magicGame = g.copy(finished = false, players = g.players.map {
+            it.copy(life = g.startingLife, poison = 0, energy = 0, experience = 0, eliminated = false)
         }))
     }
 
