@@ -102,6 +102,7 @@ data class TrucoMatch(
     val us: TrucoSide = TrucoSide(),
     val them: TrucoSide = TrucoSide(),
     val target: Int = 30,              // 15 (solo malas) or 30 (malas + buenas)
+    val chooseTarget: Boolean = false, // true → ask 15/30 before the next partido
     val history: List<TrucoEvent> = emptyList(),
 )
 
@@ -163,6 +164,7 @@ data class GameResult(
 @Serializable
 data class Settings(
     val language: String = "es",   // "es" | "en"
+    val soundVolume: Float = 1f,   // 0f..1f
 )
 
 /** Root persisted state — serialized as one JSON blob in DataStore. */
@@ -177,4 +179,5 @@ data class AppState(
     val settings: Settings = Settings(),
     val pendingResult: GameResult? = null,
     val unlockedAvatars: Set<Int> = setOf(1, 2, 12, 24),
+    val adBaseline: Int = 0,           // history.size when the last interstitial was shown
 )

@@ -56,7 +56,6 @@ fun MenuGridContent(
     state: AppState,
     padding: PaddingValues,
     onToggleView: () -> Unit,
-    onOpenSettings: () -> Unit,
     onOpenCurrent: () -> Unit,
     onStartGeneric: (GameType) -> Unit,
     onOpenSpecific: (GameType) -> Unit,
@@ -86,10 +85,7 @@ fun MenuGridContent(
                 contentDescription = "Epic Hypernova",
                 modifier = Modifier.width(196.dp).aspectRatio(1993f / 789f),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CircleIconButton("▤", onToggleView)
-                CircleIconButton("⚙", onOpenSettings)
-            }
+            CircleIconButton("▤", onToggleView)
         }
 
         // Search

@@ -130,6 +130,12 @@
     <string name="color">Color</string>
     <string name="avatar">Avatar</string>
     <string name="unlock">Unlock</string>
+    <string name="unlock_avatars_title">Unlock avatars</string>
+    <string name="unlock_avatars_sub">Watch an ad to unlock each one</string>
+    <string name="new_player_name_hint">Player name</string>
+    <string name="create_and_add">Create and add</string>
+    <string name="or_create_new">Or create a new one</string>
+    <string name="config_name_label">Configuration name</string>
     <string name="ad_not_available">Ad not available, try again</string>
     <string name="favorite">Frequent player</string>
     <string name="favorite_sub">Shows first when building a game</string>
@@ -156,6 +162,7 @@
     <!-- Settings -->
     <string name="settings">Settings</string>
     <string name="language">Language</string>
+    <string name="sound">Sound</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
     <string name="about_version">Epic Hypernova Score Tracker · v1.0.0</string>

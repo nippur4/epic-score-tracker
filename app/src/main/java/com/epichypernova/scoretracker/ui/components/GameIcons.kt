@@ -117,6 +117,29 @@ fun PlayersTabIcon(color: Color, size: Int = 22) {
     }
 }
 
+/** Ajustes: a gear. */
+@Composable
+fun SettingsTabIcon(color: Color, size: Int = 22) {
+    Canvas(Modifier.size(size.dp)) {
+        val w = this.size.width; val h = this.size.height
+        val cx = 0.5f * w; val cy = 0.5f * h
+        val r = 0.30f * w
+        drawCircle(color, radius = r, center = Offset(cx, cy), style = Stroke(width = w * 0.11f))
+        repeat(8) { k ->
+            val a = k * (kotlin.math.PI / 4).toFloat()
+            val c = kotlin.math.cos(a); val s = kotlin.math.sin(a)
+            drawLine(
+                color,
+                Offset(cx + c * r * 1.05f, cy + s * r * 1.05f),
+                Offset(cx + c * r * 1.55f, cy + s * r * 1.55f),
+                strokeWidth = w * 0.11f,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+            )
+        }
+        drawCircle(color, radius = w * 0.10f, center = Offset(cx, cy))
+    }
+}
+
 /** A single die face (rounded square + pips) used by the starter draw. */
 @Composable
 fun DieFace(value: Int, color: Color, pip: Color, size: Int = 56) {

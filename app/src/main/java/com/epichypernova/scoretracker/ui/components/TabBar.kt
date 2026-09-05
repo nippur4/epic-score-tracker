@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 
-enum class AppTab { JUEGOS, HISTORIAL, JUGADORES }
+enum class AppTab { JUEGOS, HISTORIAL, JUGADORES, AJUSTES }
 
 @Composable
 fun BottomTabBar(
@@ -60,6 +60,7 @@ fun BottomTabBar(
                         AppTab.JUEGOS -> GamesTabIcon(iconColor, 21)
                         AppTab.HISTORIAL -> HistoryTabIcon(iconColor, 21)
                         AppTab.JUGADORES -> PlayersTabIcon(iconColor, 21)
+                        AppTab.AJUSTES -> SettingsTabIcon(iconColor, 21)
                     }
                     Text(
                         text = labels[tab] ?: tab.name,

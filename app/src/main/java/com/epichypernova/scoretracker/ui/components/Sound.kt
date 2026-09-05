@@ -34,5 +34,6 @@ fun rememberSoundEffect(resId: Int): () -> Unit {
         soundId = id
         onDispose { pool.release() }
     }
-    return remember { { if (soundId != 0) pool.play(soundId, 1f, 1f, 1, 0, 1f) } }
+    val vol = LocalSoundVolume.current
+    return remember(soundId, vol) { { if (soundId != 0 && vol > 0f) pool.play(soundId, vol, vol, 1, 0, 1f) } }
 }

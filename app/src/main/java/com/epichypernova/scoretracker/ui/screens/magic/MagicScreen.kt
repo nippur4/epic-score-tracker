@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -115,27 +116,27 @@ fun MagicScreen(
         Column(Modifier.fillMaxSize()) {
             when (players.size) {
                 2 -> {
-                    MagicPane(players[0], 0, repo, game.commander, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    MagicPane(players[0], 0, repo, game.commander, rotated = true, wide = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
                     bar()
-                    MagicPane(players[1], 1, repo, game.commander, rotated = false, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    MagicPane(players[1], 1, repo, game.commander, rotated = false, wide = true, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
                 3 -> {
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        MagicPane(players[0], 0, repo, game.commander, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        MagicPane(players[1], 1, repo, game.commander, rotated = true, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[0], 0, repo, game.commander, rotated = true, wide = false, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[1], 1, repo, game.commander, rotated = true, wide = false, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                     bar()
-                    MagicPane(players[2], 2, repo, game.commander, rotated = false, onPickColor = { colorForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    MagicPane(players[2], 2, repo, game.commander, rotated = false, wide = true, onPickColor = { colorForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
                 else -> {
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        MagicPane(players[0], 0, repo, game.commander, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        MagicPane(players[1], 1, repo, game.commander, rotated = true, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[0], 0, repo, game.commander, rotated = true, wide = false, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[1], 1, repo, game.commander, rotated = true, wide = false, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                     bar()
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        MagicPane(players[2], 2, repo, game.commander, rotated = false, onPickColor = { colorForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        MagicPane(players[3], 3, repo, game.commander, rotated = false, onPickColor = { colorForIndex = 3 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[2], 2, repo, game.commander, rotated = false, wide = false, onPickColor = { colorForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        MagicPane(players[3], 3, repo, game.commander, rotated = false, wide = false, onPickColor = { colorForIndex = 3 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
@@ -155,6 +156,7 @@ fun MagicScreen(
             count = players.size,
             commander = game.commander,
             onApply = { count, commander -> repo.update { AppActions.magicConfigure(it, count, commander) } },
+            onFinish = { repo.update { AppActions.magicFinish(it) } },
             onClose = { showConfig = false },
         )
     }
@@ -181,6 +183,7 @@ private fun MagicPane(
     repo: Repository,
     commander: Boolean,
     rotated: Boolean,
+    wide: Boolean,
     onPickColor: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -198,42 +201,59 @@ private fun MagicPane(
             )
         )
     }
+    val lifeSize = if (wide) 66 else 46
+    val btnSize = if (wide) 56 else 46
     Box(modifier.then(bg)) {
         Column(
-            Modifier.fillMaxSize().rotate(if (rotated) 180f else 0f).padding(12.dp),
+            Modifier.fillMaxSize().rotate(if (rotated) 180f else 0f).padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(
-                player.name.uppercase(),
-                color = if (player.eliminated) Palette.Cyan else Color(player.color),
-                modifier = Modifier.clickable { onPickColor() },
-                style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.9.sp),
-            )
+            // name + tappable color swatch
+            Row(
+                Modifier.clickable { onPickColor() },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(Modifier.size(12.dp).clip(CircleShape).background(Color(player.color)).border(1.dp, Color(0x33FFFFFF), CircleShape))
+                Text(
+                    player.name.uppercase(),
+                    color = if (player.eliminated) Palette.Cyan else Color(player.color),
+                    style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.9.sp),
+                )
+            }
             if (player.eliminated) {
-                Text("${player.life}", color = Color(0xFF3E4A6B), style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 60.sp, fontFeatureSettings = "tnum"))
+                Text("${player.life}", color = Color(0xFF3E4A6B), style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = lifeSize.sp, fontFeatureSettings = "tnum"))
                 Text(stringResource(R.string.magic_eliminated), color = Palette.Cyan, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 10.5.sp, letterSpacing = 1.6.sp))
             } else {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LifeButton("−") { repo.update { AppActions.magicLife(it, index, -1) } }
+                // life + / − always on one line
+                Row(
+                    Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(if (wide) 16.dp else 8.dp),
+                ) {
+                    LifeButton("−", btnSize) { repo.update { AppActions.magicLife(it, index, -1) } }
                     Text(
                         "${player.life}",
                         color = Color.White,
-                        style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 72.sp, fontFeatureSettings = "tnum"),
+                        maxLines = 1,
+                        softWrap = false,
+                        style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = lifeSize.sp, fontFeatureSettings = "tnum"),
                     )
-                    LifeButton("＋") { repo.update { AppActions.magicLife(it, index, +1) } }
+                    LifeButton("＋", btnSize) { repo.update { AppActions.magicLife(it, index, +1) } }
                 }
-                Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // counters stacked, one per row
+                Column(Modifier.padding(top = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     CounterChip(player.poison, Palette.Mint,
                         onDec = { repo.update { AppActions.magicPoison(it, index, -1) } },
-                        onInc = { repo.update { AppActions.magicPoison(it, index, +1) } }) { PoisonIcon(Palette.Mint) }
+                        onInc = { repo.update { AppActions.magicPoison(it, index, +1) } }) { PoisonIcon(Palette.Mint, 18) }
                     CounterChip(player.energy, Palette.Cyan,
                         onDec = { repo.update { AppActions.magicEnergy(it, index, -1) } },
-                        onInc = { repo.update { AppActions.magicEnergy(it, index, +1) } }) { EnergyIcon(Palette.Cyan) }
+                        onInc = { repo.update { AppActions.magicEnergy(it, index, +1) } }) { EnergyIcon(Palette.Cyan, 18) }
                     if (commander) {
                         CounterChip(player.experience, EXP_COLOR,
                             onDec = { repo.update { AppActions.magicExperience(it, index, -1) } },
-                            onInc = { repo.update { AppActions.magicExperience(it, index, +1) } }) { ExperienceIcon(EXP_COLOR) }
+                            onInc = { repo.update { AppActions.magicExperience(it, index, +1) } }) { ExperienceIcon(EXP_COLOR, 18) }
                     }
                 }
             }
@@ -242,9 +262,9 @@ private fun MagicPane(
 }
 
 @Composable
-private fun LifeButton(symbol: String, onClick: () -> Unit) {
+private fun LifeButton(symbol: String, size: Int, onClick: () -> Unit) {
     Box(
-        Modifier.size(58.dp).clip(CircleShape).border(1.dp, Color(0x2EFFFFFF), CircleShape).repeatingClickable(onClick = onClick),
+        Modifier.size(size.dp).clip(CircleShape).border(1.dp, Color(0x2EFFFFFF), CircleShape).repeatingClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(symbol, color = Color.White, style = TextStyle(fontSize = 26.sp))
@@ -255,17 +275,17 @@ private fun LifeButton(symbol: String, onClick: () -> Unit) {
 @Composable
 private fun CounterChip(value: Int, color: Color, onDec: () -> Unit, onInc: () -> Unit, icon: @Composable () -> Unit) {
     Row(
-        Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 8.dp, vertical = 5.dp),
+        Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
         icon()
-        Box(Modifier.size(20.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).clickable { onDec() }, contentAlignment = Alignment.Center) {
-            Text("−", color = Palette.TextPrimary, style = TextStyle(fontSize = 15.sp))
+        Box(Modifier.size(26.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).clickable { onDec() }, contentAlignment = Alignment.Center) {
+            Text("−", color = Palette.TextPrimary, style = TextStyle(fontSize = 18.sp))
         }
-        Text("$value", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFeatureSettings = "tnum"))
-        Box(Modifier.size(20.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).clickable { onInc() }, contentAlignment = Alignment.Center) {
-            Text("+", color = Palette.TextPrimary, style = TextStyle(fontSize = 15.sp))
+        Text("$value", color = Palette.TextPrimary, modifier = Modifier.widthIn(min = 22.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFeatureSettings = "tnum"))
+        Box(Modifier.size(26.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).clickable { onInc() }, contentAlignment = Alignment.Center) {
+            Text("+", color = Palette.TextPrimary, style = TextStyle(fontSize = 18.sp))
         }
     }
 }
@@ -320,6 +340,7 @@ private fun MagicConfigSheet(
     count: Int,
     commander: Boolean,
     onApply: (Int, Boolean) -> Unit,
+    onFinish: () -> Unit,
     onClose: () -> Unit,
 ) {
     var c by remember { mutableIntStateOf(count) }
@@ -344,6 +365,10 @@ private fun MagicConfigSheet(
                 Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(999.dp)).background(Palette.Cyan).clickable { onApply(c, cmd); onClose() },
                 contentAlignment = Alignment.Center,
             ) { Text(stringResource(R.string.done), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp)) }
+            Box(
+                Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onFinish(); onClose() },
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.finish_game), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)) }
         }
     }
 }

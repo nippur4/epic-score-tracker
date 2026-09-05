@@ -64,7 +64,6 @@ fun MenuScreen(
     onStartGeneric: (GameType) -> Unit,
     onOpenSpecific: (GameType) -> Unit,
     onStartConfig: (SavedConfig) -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     var grid by remember { mutableStateOf(false) }
     TabScaffold(
@@ -78,7 +77,6 @@ fun MenuScreen(
                     state = state,
                     padding = padding,
                     onToggleView = { grid = false },
-                    onOpenSettings = onOpenSettings,
                     onOpenCurrent = onOpenCurrent,
                     onStartGeneric = onStartGeneric,
                     onOpenSpecific = onOpenSpecific,
@@ -94,7 +92,7 @@ fun MenuScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                item { MenuHeader(onOpenSettings, onToggleView = { grid = true }) }
+                item { MenuHeader(onToggleView = { grid = true }) }
 
                 state.currentGame?.let { game ->
                     item {
@@ -141,7 +139,7 @@ fun MenuScreen(
 }
 
 @Composable
-private fun MenuHeader(onOpenSettings: () -> Unit, onToggleView: () -> Unit) {
+private fun MenuHeader(onToggleView: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -152,10 +150,7 @@ private fun MenuHeader(onOpenSettings: () -> Unit, onToggleView: () -> Unit) {
             contentDescription = "Epic Hypernova",
             modifier = Modifier.width(254.dp).aspectRatio(1993f / 789f),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircleIconButton("▦", onToggleView)
-            CircleIconButton("⚙", onOpenSettings)
-        }
+        CircleIconButton("▦", onToggleView)
     }
 }
 

@@ -45,7 +45,9 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.TrucoSide
 import com.epichypernova.scoretracker.ui.components.ChamferCta
 import com.epichypernova.scoretracker.ui.components.CompactHeader
+import com.epichypernova.scoretracker.ui.components.FinishMenu
 import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.rememberAdGate
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -57,27 +59,34 @@ fun TrucoScreen(
     state: AppState,
     onBack: () -> Unit,
 ) {
+    val adGate = rememberAdGate(repo, state)
     val match = state.trucoMatch
-    if (match == null) {
-        TrucoChooser(onBack = onBack, onStart = { target -> repo.update { AppActions.trucoStart(it, target) } })
+    if (match == null || match.chooseTarget) {
+        TrucoChooser(onBack = onBack, onStart = { target -> adGate { repo.update { AppActions.trucoChooseTarget(it, target) } } })
         return
     }
     val whoosh = rememberSoundEffect(R.raw.whoosh)
+    var menu by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        CompactHeader(
-            title = stringResource(R.string.game_truco_title),
-            meta = {
-                Row {
-                    Text("A ${match.target} · ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
-                    Text("${match.us.gamesWon}", color = Palette.Cyan, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
-                    Text(" – ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
-                    Text("${match.them.gamesWon}", color = Palette.Magenta, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
-                }
-            },
-            onBack = onBack,
-            trailing = null,
-        )
+        Box(Modifier.fillMaxWidth()) {
+            CompactHeader(
+                title = stringResource(R.string.game_truco_title),
+                meta = {
+                    Row {
+                        Text("A ${match.target} · ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
+                        Text("${match.us.gamesWon}", color = Palette.Cyan, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                        Text(" – ", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
+                        Text("${match.them.gamesWon}", color = Palette.Magenta, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                    }
+                },
+                onBack = onBack,
+                onTrailing = { menu = true },
+            )
+            Box(Modifier.align(Alignment.TopEnd)) {
+                FinishMenu(menu, { menu = false }, onFinish = { repo.update { AppActions.trucoFinish(it) } })
+            }
+        }
 
         Row(Modifier.weight(1f).fillMaxWidth()) {
             TrucoSideView(

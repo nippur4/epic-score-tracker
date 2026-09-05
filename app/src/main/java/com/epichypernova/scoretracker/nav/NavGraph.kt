@@ -22,10 +22,12 @@ import com.epichypernova.scoretracker.ui.screens.players.PlayersScreen
 @Composable
 fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNavController()) {
     val state by repo.state.collectAsState()
+    val adGate = com.epichypernova.scoretracker.ui.components.rememberAdGate(repo, state)
     val tabLabels = mapOf(
         AppTab.JUEGOS to stringResource(R.string.tab_games),
         AppTab.HISTORIAL to stringResource(R.string.tab_history),
         AppTab.JUGADORES to stringResource(R.string.tab_players),
+        AppTab.AJUSTES to stringResource(R.string.settings),
     )
 
     // Any game that finishes sets pendingResult → show the winner screen.
@@ -40,6 +42,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
             AppTab.JUEGOS -> Routes.MENU
             AppTab.HISTORIAL -> Routes.HISTORY
             AppTab.JUGADORES -> Routes.PLAYERS
+            AppTab.AJUSTES -> Routes.SETTINGS
         }
         navController.navigate(route) {
             popUpTo(Routes.MENU) { saveState = true }
@@ -64,10 +67,11 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                     }
                 },
                 onStartConfig = { cfg ->
-                    repo.update { AppActions.startFromConfig(it, cfg) }
-                    navController.navigate(Routes.GENERIC_TABLE)
+                    adGate {
+                        repo.update { AppActions.startFromConfig(it, cfg) }
+                        navController.navigate(Routes.GENERIC_TABLE)
+                    }
                 },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
 
@@ -77,6 +81,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
 
         composable(Routes.PLAYERS) {
             PlayersScreen(
+                repo = repo,
                 state = state,
                 tabLabels = tabLabels,
                 onSelectTab = ::goTab,
@@ -97,7 +102,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
 
         composable(Routes.SETTINGS) {
             com.epichypernova.scoretracker.ui.screens.settings.SettingsScreen(
-                repo = repo, state = state, onBack = { navController.popBackStack() },
+                repo = repo, state = state, tabLabels = tabLabels, onSelectTab = ::goTab,
             )
         }
 

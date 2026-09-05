@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.epichypernova.scoretracker.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +58,17 @@ fun BackHeader(
             trailing?.invoke()
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x17FFFFFF)))
+    }
+}
+
+/** Overflow menu with a single "finish game" action, anchored under the ⋮ of a game board. */
+@Composable
+fun FinishMenu(expanded: Boolean, onDismiss: () -> Unit, onFinish: () -> Unit) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, containerColor = Palette.SheetSurface) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.finish_game), color = Palette.TextPrimary) },
+            onClick = { onDismiss(); onFinish() },
+        )
     }
 }
 

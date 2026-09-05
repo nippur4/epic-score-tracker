@@ -56,6 +56,7 @@ import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.Stepper
 import com.epichypernova.scoretracker.ui.components.cardSurface
+import com.epichypernova.scoretracker.ui.components.rememberAdGate
 import com.epichypernova.scoretracker.ui.components.dashedBorder
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -84,9 +85,11 @@ fun GenericSetupScreen(
     var saveConfig by remember { mutableStateOf(false) }
     var configName by remember { mutableStateOf("") }
     var showAdd by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
 
     val selectedUsers = selectedIds.mapNotNull { id -> state.users.firstOrNull { it.id == id } }
     val canStart = selectedIds.size >= 2 && (!saveConfig || configName.isNotBlank())
+    val adGate = rememberAdGate(repo, state)
 
     Column(Modifier.fillMaxSize().background(Palette.AppBg)) {
         BackHeader(title = title, onBack = onBack, overtitle = stringResource(R.string.new_game))
@@ -186,26 +189,34 @@ fun GenericSetupScreen(
                     onChange = { saveConfig = it },
                 )
                 if (saveConfig) {
-                    Column {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            BasicTextField(
-                                value = configName,
-                                onValueChange = { if (it.length <= 32) configName = it },
-                                singleLine = true,
-                                textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 15.sp, color = Palette.TextPrimary),
-                                cursorBrush = SolidColor(Palette.Cyan),
-                                modifier = Modifier.weight(1f),
-                            )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            stringResource(R.string.config_name_label),
+                            color = Palette.TextTertiary,
+                            style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 12.5.sp),
+                        )
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Palette.ControlFill)
+                                .border(1.5.dp, if (configName.isBlank()) Palette.PlayerPink else Palette.Cyan, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(Modifier.weight(1f)) {
+                                if (configName.isEmpty()) {
+                                    Text(stringResource(R.string.config_name_hint), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 15.sp))
+                                }
+                                BasicTextField(
+                                    value = configName,
+                                    onValueChange = { if (it.length <= 32) configName = it },
+                                    singleLine = true,
+                                    textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 15.sp, color = Palette.TextPrimary),
+                                    cursorBrush = SolidColor(Palette.Cyan),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                             Text("${configName.length}/32", color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp))
-                        }
-                        Box(Modifier.fillMaxWidth().height(1.5.dp).padding(top = 6.dp).background(Palette.Cyan))
-                        if (configName.isBlank()) {
-                            Text(
-                                stringResource(R.string.config_name_hint),
-                                color = Palette.PlayerPink,
-                                style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.5.sp),
-                                modifier = Modifier.padding(top = 6.dp),
-                            )
                         }
                     }
                 }
@@ -227,14 +238,16 @@ fun GenericSetupScreen(
                         bidsEnabled = hasHands && bidsEnabled,
                         pointsPerHit = pointsPerHit.coerceAtLeast(1),
                     )
-                    repo.update { s ->
-                        var next = AppActions.startGeneric(s, gameType, if (saveConfig) configName.ifBlank { title } else title, selectedIds.toList(), rules)
-                        if (saveConfig && configName.isNotBlank()) {
-                            next = AppActions.saveConfig(next, configName, gameType, selectedIds.toList(), rules)
+                    adGate {
+                        repo.update { s ->
+                            var next = AppActions.startGeneric(s, gameType, if (saveConfig) configName.ifBlank { title } else title, selectedIds.toList(), rules)
+                            if (saveConfig && configName.isNotBlank()) {
+                                next = AppActions.saveConfig(next, configName, gameType, selectedIds.toList(), rules)
+                            }
+                            next
                         }
-                        next
+                        onStarted()
                     }
-                    onStarted()
                 },
                 modifier = Modifier.fillMaxWidth().alpha(if (canStart) 1f else 0.4f),
             )
@@ -248,10 +261,7 @@ fun GenericSetupScreen(
             confirmButton = { TextButton(onClick = { showAdd = false }) { Text(stringResource(R.string.done), color = Palette.Cyan) } },
             title = { Text(stringResource(R.string.add_player_title), color = Palette.TextPrimary) },
             text = {
-                Column {
-                    if (available.isEmpty()) {
-                        Text(stringResource(R.string.no_more_players), color = Palette.TextTertiary)
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     available.forEach { u ->
                         Row(
                             Modifier.fillMaxWidth().clickable { selectedIds.add(u.id); showAdd = false }.padding(vertical = 8.dp),
@@ -261,12 +271,62 @@ fun GenericSetupScreen(
                             Text(u.name, color = Palette.TextPrimary, modifier = Modifier.padding(start = 12.dp))
                         }
                     }
+
+                    // Create a new player without leaving this screen
+                    Text(
+                        stringResource(R.string.or_create_new),
+                        color = Palette.TextTertiary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.2.sp),
+                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                    )
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Palette.ControlFill)
+                            .border(1.dp, Palette.CardBorder, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.weight(1f)) {
+                            if (newName.isEmpty()) {
+                                Text(stringResource(R.string.new_player_name_hint), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp))
+                            }
+                            BasicTextField(
+                                value = newName,
+                                onValueChange = { newName = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp, color = Palette.TextPrimary),
+                                cursorBrush = SolidColor(Palette.Cyan),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                    Box(
+                        Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(999.dp))
+                            .background(Palette.Cyan).alpha(if (newName.isBlank()) 0.4f else 1f)
+                            .clickable(enabled = newName.isNotBlank()) {
+                                val color = NEW_PLAYER_COLORS[state.users.size % NEW_PLAYER_COLORS.size]
+                                val user = User(AppActions.newId("u"), newName.trim(), color)
+                                repo.update { AppActions.addExistingUser(it, user) }
+                                selectedIds.add(user.id)
+                                newName = ""
+                                showAdd = false
+                            }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.create_and_add), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp))
+                    }
                 }
             },
             containerColor = Palette.SheetSurface,
         )
     }
 }
+
+private val NEW_PLAYER_COLORS = listOf(
+    0xFF2FD3F0, 0xFF55E6A5, 0xFFFF6FA8, 0xFFA18AF5, 0xFF3B7BF7, 0xFFF27BA9,
+)
 
 @Composable
 private fun PlayerChip(user: User, onRemove: () -> Unit) {

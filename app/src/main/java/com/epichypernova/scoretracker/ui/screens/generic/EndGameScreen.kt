@@ -57,10 +57,11 @@ fun EndGameScreen(
 
     // Epic victory sound — plays on entry, released on exit; mute toggle pauses/resumes.
     val context = LocalContext.current
-    var muted by remember { mutableStateOf(false) }
+    val volume = com.epichypernova.scoretracker.ui.components.LocalSoundVolume.current
+    var muted by remember { mutableStateOf(volume <= 0f) }
     val player = remember { runCatching { MediaPlayer.create(context, R.raw.victory) }.getOrNull() }
     DisposableEffect(Unit) {
-        runCatching { player?.start() }
+        runCatching { player?.setVolume(volume, volume); if (volume > 0f) player?.start() }
         onDispose { runCatching { player?.stop(); player?.release() } }
     }
 

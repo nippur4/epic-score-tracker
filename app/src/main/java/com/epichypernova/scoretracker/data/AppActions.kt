@@ -34,6 +34,9 @@ object AppActions {
         return s.copy(users = s.users + user)
     }
 
+    /** Adds a pre-built user (used when the caller needs to know the id, e.g. to auto-select it). */
+    fun addExistingUser(s: AppState, user: User): AppState = s.copy(users = s.users + user)
+
     fun updateUser(s: AppState, updated: User): AppState =
         s.copy(users = s.users.map { if (it.id == updated.id) updated else it })
 
@@ -44,6 +47,11 @@ object AppActions {
     /** Unlocks an avatar (after a rewarded ad). */
     fun unlockAvatar(s: AppState, id: Int): AppState =
         s.copy(unlockedAvatars = s.unlockedAvatars + id)
+
+    /** Whether an interstitial is due (every 7 finished games, before starting a new one). */
+    fun adDue(s: AppState): Boolean = s.history.size - s.adBaseline >= 7
+
+    fun markAdShown(s: AppState): AppState = s.copy(adBaseline = s.history.size)
 
     // ---------- Saved configs ----------
 
@@ -169,6 +177,30 @@ object AppActions {
 
     fun trucoStart(s: AppState, target: Int = 30): AppState = s.copy(trucoMatch = TrucoMatch(target = target))
 
+    /** Picks the target for the next partido, preserving the partidos marker. */
+    fun trucoChooseTarget(s: AppState, target: Int): AppState {
+        val m = s.trucoMatch ?: return trucoStart(s, target)
+        return s.copy(trucoMatch = m.copy(target = target, chooseTarget = false, us = m.us.copy(points = 0), them = m.them.copy(points = 0), history = emptyList()))
+    }
+
+    /** Ends the whole truco session, records it and shows the winner. */
+    fun trucoFinish(s: AppState): AppState {
+        val m = s.trucoMatch ?: return s
+        val usName = "Nosotros"; val themName = "Ellos"
+        val winners = when {
+            m.us.gamesWon > m.them.gamesWon -> listOf(usName)
+            m.them.gamesWon > m.us.gamesWon -> listOf(themName)
+            else -> listOf(usName, themName)
+        }
+        val lines = listOf(
+            ResultLine(usName, m.us.gamesWon.toString(), 0xFF2FD3F0, usName in winners),
+            ResultLine(themName, m.them.gamesWon.toString(), 0xFFE24BD6, themName in winners),
+        )
+        val summary = "$usName ${m.us.gamesWon} - ${m.them.gamesWon} $themName"
+        val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), winners, summary, System.currentTimeMillis())
+        return s.copy(trucoMatch = null, history = listOf(entry) + s.history, pendingResult = GameResult(GameType.TRUCO, "Truco", winners, lines, summary))
+    }
+
     /** Adds points to a side. On reaching the target the side wins the partido; shows the winner. */
     fun trucoAdd(s: AppState, us: Boolean, amount: Int): AppState {
         val m = s.trucoMatch ?: return s
@@ -196,7 +228,11 @@ object AppActions {
             )
             val summary = "$usName ${usSide.gamesWon} - ${themSide.gamesWon} $themName"
             val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), listOf(wName), summary, System.currentTimeMillis())
-            ns = ns.copy(history = listOf(entry) + ns.history, pendingResult = GameResult(GameType.TRUCO, "Truco", listOf(wName), lines, summary))
+            ns = ns.copy(
+                trucoMatch = ns.trucoMatch?.copy(chooseTarget = true),
+                history = listOf(entry) + ns.history,
+                pendingResult = GameResult(GameType.TRUCO, "Truco", listOf(wName), lines, summary),
+            )
         }
         return ns
     }
@@ -217,10 +253,10 @@ object AppActions {
         return s.copy(trucoMatch = m.copy(us = last.us, them = last.them, history = m.history.dropLast(1)))
     }
 
-    /** Resets porotos but keeps the match (partidos) score. */
+    /** Resets porotos and re-asks the target, keeping the partidos marker. */
     fun trucoNewMatch(s: AppState): AppState {
         val m = s.trucoMatch ?: return s
-        return s.copy(trucoMatch = m.copy(us = m.us.copy(points = 0), them = m.them.copy(points = 0), history = emptyList()))
+        return s.copy(trucoMatch = m.copy(us = m.us.copy(points = 0), them = m.them.copy(points = 0), chooseTarget = true, history = emptyList()))
     }
 
     // ---------- Magic ----------
@@ -312,6 +348,24 @@ object AppActions {
         return s.copy(magicGame = g.mapPlayer(index) { it.copy(experience = (it.experience + delta).coerceAtLeast(0)) })
     }
 
+    /** Ends the magic game now: winner = most life (alive preferred); records and shows result. */
+    fun magicFinish(s: AppState): AppState {
+        val g = s.magicGame ?: return s
+        val pool = g.players.filter { !it.eliminated }.ifEmpty { g.players }
+        val best = pool.maxByOrNull { it.life }
+        val winners = pool.filter { it.life == best?.life }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
+        val label = if (g.commander) "Commander" else "Magic ${g.players.size}p"
+        val summary = "$label · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            magicGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.MAGIC, "Magic", wNames, lines, summary),
+        )
+    }
+
     fun magicReset(s: AppState): AppState {
         val g = s.magicGame ?: return s
         return s.copy(magicGame = g.copy(finished = false, players = g.players.map {
@@ -323,4 +377,7 @@ object AppActions {
 
     fun setLanguage(s: AppState, language: String): AppState =
         s.copy(settings = s.settings.copy(language = language))
+
+    fun setSoundVolume(s: AppState, volume: Float): AppState =
+        s.copy(settings = s.settings.copy(soundVolume = volume.coerceIn(0f, 1f)))
 }

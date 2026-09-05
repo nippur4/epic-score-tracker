@@ -53,6 +53,7 @@ import com.epichypernova.scoretracker.data.model.CurrentGame
 import com.epichypernova.scoretracker.data.model.User
 import com.epichypernova.scoretracker.ui.components.ChamferCta
 import com.epichypernova.scoretracker.ui.components.CompactHeader
+import com.epichypernova.scoretracker.ui.components.FinishMenu
 import com.epichypernova.scoretracker.ui.components.SecondaryButton
 import com.epichypernova.scoretracker.ui.components.ThinProgressBar
 import com.epichypernova.scoretracker.ui.components.rowSurface
@@ -88,24 +89,31 @@ fun GenericTableScreen(
     val pendingRound = if (bids) game.rounds.firstOrNull { r -> r.cells.any { it.hits == null } } else null
 
     var sheet by remember { mutableStateOf<SheetReq?>(null) }
+    var menu by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBg)) {
-        CompactHeader(
-            title = game.name ?: "",
-            meta = {
-                Text(
-                    stringResource(
-                        R.string.table_meta,
-                        Derivations.currentRoundNumber(game),
-                        game.rules.targetScore,
-                        stringResource(if (game.rules.lowWins) R.string.wins_menor_word else R.string.wins_mayor_word),
-                    ),
-                    color = Palette.TextTertiary,
-                    style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
-                )
-            },
-            onBack = onBack,
-        )
+        Box(Modifier.fillMaxWidth()) {
+            CompactHeader(
+                title = game.name ?: "",
+                meta = {
+                    Text(
+                        stringResource(
+                            R.string.table_meta,
+                            Derivations.currentRoundNumber(game),
+                            game.rules.targetScore,
+                            stringResource(if (game.rules.lowWins) R.string.wins_menor_word else R.string.wins_mayor_word),
+                        ),
+                        color = Palette.TextTertiary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
+                    )
+                },
+                onBack = onBack,
+                onTrailing = { menu = true },
+            )
+            Box(Modifier.align(Alignment.TopEnd)) {
+                FinishMenu(menu, { menu = false }, onFinish = { repo.update { AppActions.finishGeneric(it) } })
+            }
+        }
 
         LazyColumn(
             Modifier.weight(1f),
