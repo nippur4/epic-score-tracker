@@ -10,6 +10,8 @@ import com.epichypernova.scoretracker.data.model.ResultLine
 import com.epichypernova.scoretracker.data.model.HistoryEntry
 import com.epichypernova.scoretracker.data.model.MagicGame
 import com.epichypernova.scoretracker.data.model.MagicPlayer
+import com.epichypernova.scoretracker.data.model.PokemonGame
+import com.epichypernova.scoretracker.data.model.PokemonPlayer
 import com.epichypernova.scoretracker.data.model.Round
 import com.epichypernova.scoretracker.data.model.SavedConfig
 import com.epichypernova.scoretracker.data.model.Settings
@@ -17,6 +19,8 @@ import com.epichypernova.scoretracker.data.model.TrucoEvent
 import com.epichypernova.scoretracker.data.model.TrucoMatch
 import com.epichypernova.scoretracker.data.model.TrucoSide
 import com.epichypernova.scoretracker.data.model.User
+import com.epichypernova.scoretracker.data.model.YuGiOhGame
+import com.epichypernova.scoretracker.data.model.YuGiOhPlayer
 import java.util.UUID
 
 /**
@@ -48,6 +52,23 @@ object AppActions {
     fun unlockAvatar(s: AppState, id: Int): AppState =
         s.copy(unlockedAvatars = s.unlockedAvatars + id)
 
+    /** How many rewarded ads an avatar costs to unlock. Avatar 30 is the premium one (5). */
+    fun adsRequiredForAvatar(id: Int): Int = if (id == 30) 5 else 1
+
+    /**
+     * Registers one watched rewarded ad toward unlocking [id]. Unlocks once the required
+     * number of ads has been reached; otherwise advances (and persists) the progress.
+     */
+    fun watchAvatarAd(s: AppState, id: Int): AppState {
+        if (id in s.unlockedAvatars) return s
+        val progress = (s.avatarAdProgress[id] ?: 0) + 1
+        return if (progress >= adsRequiredForAvatar(id)) {
+            s.copy(unlockedAvatars = s.unlockedAvatars + id, avatarAdProgress = s.avatarAdProgress - id)
+        } else {
+            s.copy(avatarAdProgress = s.avatarAdProgress + (id to progress))
+        }
+    }
+
     /** Whether an interstitial is due (every 7 finished games, before starting a new one). */
     fun adDue(s: AppState): Boolean = s.history.size - s.adBaseline >= 7
 
@@ -68,6 +89,10 @@ object AppActions {
 
     fun deleteConfig(s: AppState, id: String): AppState =
         s.copy(savedConfigs = s.savedConfigs.filterNot { it.id == id })
+
+    /** Toggles whether a game type is one of the user's favorites (shown at the top of the menu). */
+    fun toggleFavoriteGame(s: AppState, gameType: GameType): AppState =
+        s.copy(favoriteGames = if (gameType in s.favoriteGames) s.favoriteGames - gameType else s.favoriteGames + gameType)
 
     /** Starts a fresh generic game from a saved configuration. */
     fun startFromConfig(s: AppState, config: SavedConfig): AppState =
@@ -370,6 +395,221 @@ object AppActions {
         val g = s.magicGame ?: return s
         return s.copy(magicGame = g.copy(finished = false, players = g.players.map {
             it.copy(life = g.startingLife, poison = 0, energy = 0, experience = 0, eliminated = false)
+        }))
+    }
+
+    // ---------- Yu-Gi-Oh ----------
+
+    private val yugiohPalette = listOf(0xFFFF6FA8, 0xFF3B7BF7, 0xFF55E6A5, 0xFFA18AF5)
+    private val yugiohNames = listOf("Duelista 1", "Duelista 2", "Duelista 3", "Duelista 4")
+
+    fun yugiohStart(s: AppState, count: Int, startingLife: Int = 8000): AppState {
+        val life = startingLife.coerceAtLeast(1)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i -> YuGiOhPlayer(name = yugiohNames[i], color = yugiohPalette[i], life = life) }
+        return s.copy(yugiohGame = YuGiOhGame(players = players, startingLife = life))
+    }
+
+    fun yugiohEnsureExists(s: AppState): AppState =
+        if (s.yugiohGame != null) s else yugiohStart(s, count = 2)
+
+    /** Reconfigure player count, preserving existing players (name/color/life) where possible. */
+    fun yugiohConfigure(s: AppState, count: Int): AppState {
+        val g = s.yugiohGame ?: return yugiohStart(s, count)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i ->
+            val prev = g.players.getOrNull(i)
+            YuGiOhPlayer(
+                name = prev?.name ?: yugiohNames[i],
+                color = prev?.color ?: yugiohPalette[i],
+                life = prev?.life ?: g.startingLife,
+                eliminated = prev?.eliminated ?: false,
+            )
+        }
+        return s.copy(yugiohGame = g.copy(players = players))
+    }
+
+    /** Sets a new starting life and resets every duelist to it. */
+    fun yugiohSetLife(s: AppState, startingLife: Int): AppState {
+        val g = s.yugiohGame ?: return s
+        val life = startingLife.coerceAtLeast(1)
+        return s.copy(yugiohGame = g.copy(startingLife = life, finished = false, players = g.players.map {
+            it.copy(life = life, eliminated = false)
+        }))
+    }
+
+    fun yugiohSetStep(s: AppState, step: Int): AppState {
+        val g = s.yugiohGame ?: return s
+        return s.copy(yugiohGame = g.copy(step = step.coerceAtLeast(1)))
+    }
+
+    fun yugiohSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.yugiohGame ?: return s
+        return s.copy(yugiohGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    private fun YuGiOhGame.mapPlayer(index: Int, f: (YuGiOhPlayer) -> YuGiOhPlayer): YuGiOhGame =
+        copy(players = players.mapIndexed { i, p -> if (i == index) recomputeYugiohEliminated(f(p)) else p })
+
+    private fun recomputeYugiohEliminated(p: YuGiOhPlayer): YuGiOhPlayer =
+        p.copy(eliminated = p.life <= 0)
+
+    /** Applies a life delta (LP never goes below 0). */
+    fun yugiohLife(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.yugiohGame ?: return s
+        return checkYugiohEnd(s.copy(yugiohGame = g.mapPlayer(index) { it.copy(life = (it.life + delta).coerceAtLeast(0)) }))
+    }
+
+    /** Sets a duelist's LP to an exact value (from the calculator). */
+    fun yugiohSetExact(s: AppState, index: Int, value: Int): AppState {
+        val g = s.yugiohGame ?: return s
+        return checkYugiohEnd(s.copy(yugiohGame = g.mapPlayer(index) { it.copy(life = value.coerceAtLeast(0)) }))
+    }
+
+    /** When only one duelist is left standing, mark finished, record history and show the winner. */
+    private fun checkYugiohEnd(s: AppState): AppState {
+        val g = s.yugiohGame ?: return s
+        if (g.finished || g.players.size <= 1) return s
+        val alive = g.players.filter { !it.eliminated }
+        if (alive.size > 1 || g.players.none { it.eliminated }) return s
+        val winner = alive.firstOrNull()
+        val wName = winner?.name ?: "—"
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
+        val summary = "Yu-Gi-Oh! ${g.players.size}p · $wName"
+        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        return s.copy(
+            yugiohGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.YUGIOH, "Yu-Gi-Oh!", listOf(wName), lines, summary),
+        )
+    }
+
+    /** Ends the duel now: winner = most LP (alive preferred); records and shows result. */
+    fun yugiohFinish(s: AppState): AppState {
+        val g = s.yugiohGame ?: return s
+        val pool = g.players.filter { !it.eliminated }.ifEmpty { g.players }
+        val best = pool.maxByOrNull { it.life }
+        val winners = pool.filter { it.life == best?.life }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
+        val summary = "Yu-Gi-Oh! ${g.players.size}p · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            yugiohGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.YUGIOH, "Yu-Gi-Oh!", wNames, lines, summary),
+        )
+    }
+
+    fun yugiohReset(s: AppState): AppState {
+        val g = s.yugiohGame ?: return s
+        return s.copy(yugiohGame = g.copy(finished = false, players = g.players.map {
+            it.copy(life = g.startingLife, eliminated = false)
+        }))
+    }
+
+    // ---------- Pokémon TCG ----------
+
+    private val pokemonPalette = listOf(0xFF55E6A5, 0xFFF27BA9, 0xFF4AA3FF, 0xFFF2B33B)
+    private val pokemonNames = listOf("Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4")
+
+    fun pokemonStart(s: AppState, count: Int, startingPrizes: Int = 6): AppState {
+        val prizes = startingPrizes.coerceIn(1, 6)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i -> PokemonPlayer(name = pokemonNames[i], color = pokemonPalette[i], prizes = prizes) }
+        return s.copy(pokemonGame = PokemonGame(players = players, startingPrizes = prizes))
+    }
+
+    fun pokemonEnsureExists(s: AppState): AppState =
+        if (s.pokemonGame != null) s else pokemonStart(s, count = 2)
+
+    /** Reconfigure player count + starting prizes; resets the game to fresh prizes/damage. */
+    fun pokemonConfigure(s: AppState, count: Int, startingPrizes: Int): AppState {
+        val g = s.pokemonGame ?: return pokemonStart(s, count, startingPrizes)
+        val prizes = startingPrizes.coerceIn(1, 6)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i ->
+            val prev = g.players.getOrNull(i)
+            PokemonPlayer(
+                name = prev?.name ?: pokemonNames[i],
+                color = prev?.color ?: pokemonPalette[i],
+                prizes = prizes,
+            )
+        }
+        return s.copy(pokemonGame = g.copy(players = players, startingPrizes = prizes, finished = false))
+    }
+
+    fun pokemonSetStep(s: AppState, step: Int): AppState {
+        val g = s.pokemonGame ?: return s
+        return s.copy(pokemonGame = g.copy(damageStep = step.coerceAtLeast(1)))
+    }
+
+    fun pokemonSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.pokemonGame ?: return s
+        return s.copy(pokemonGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    private fun PokemonGame.mapPlayer(index: Int, f: (PokemonPlayer) -> PokemonPlayer): PokemonGame =
+        copy(players = players.mapIndexed { i, p -> if (i == index) f(p) else p })
+
+    /** Take/return a prize card (clamped 0..startingPrizes). Reaching 0 wins the game. */
+    fun pokemonPrize(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.pokemonGame ?: return s
+        val updated = g.mapPlayer(index) {
+            val next = (it.prizes + delta).coerceIn(0, g.startingPrizes)
+            it.copy(prizes = next, won = next <= 0)
+        }
+        return checkPokemonEnd(s.copy(pokemonGame = updated))
+    }
+
+    /** Adjust damage counters on the active Pokémon (never below 0). */
+    fun pokemonDamage(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.pokemonGame ?: return s
+        return s.copy(pokemonGame = g.mapPlayer(index) { it.copy(damage = (it.damage + delta).coerceAtLeast(0)) })
+    }
+
+    fun pokemonResetDamage(s: AppState, index: Int): AppState {
+        val g = s.pokemonGame ?: return s
+        return s.copy(pokemonGame = g.mapPlayer(index) { it.copy(damage = 0) })
+    }
+
+    /** When a player has taken all their prizes, mark finished, record history and show the winner. */
+    private fun checkPokemonEnd(s: AppState): AppState {
+        val g = s.pokemonGame ?: return s
+        if (g.finished) return s
+        val winners = g.players.filter { it.prizes <= 0 }
+        if (winners.isEmpty()) return s
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, "${g.startingPrizes - it.prizes}/${g.startingPrizes}", it.color, it in winners) }
+        val summary = "Pokémon TCG · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            pokemonGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.POKEMON, "Pokémon TCG", wNames, lines, summary),
+        )
+    }
+
+    /** Ends the game now: winner = fewest prizes remaining (closest to victory). */
+    fun pokemonFinish(s: AppState): AppState {
+        val g = s.pokemonGame ?: return s
+        val fewest = g.players.minByOrNull { it.prizes }?.prizes
+        val winners = g.players.filter { it.prizes == fewest }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, "${g.startingPrizes - it.prizes}/${g.startingPrizes}", it.color, it in winners) }
+        val summary = "Pokémon TCG · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            pokemonGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.POKEMON, "Pokémon TCG", wNames, lines, summary),
+        )
+    }
+
+    fun pokemonReset(s: AppState): AppState {
+        val g = s.pokemonGame ?: return s
+        return s.copy(pokemonGame = g.copy(finished = false, players = g.players.map {
+            it.copy(prizes = g.startingPrizes, damage = 0, won = false)
         }))
     }
 

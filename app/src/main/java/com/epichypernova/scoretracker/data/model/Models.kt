@@ -127,6 +127,43 @@ data class MagicGame(
     val finished: Boolean = false,
 )
 
+// ---- Yu-Gi-Oh ----
+
+@Serializable
+data class YuGiOhPlayer(
+    val name: String,
+    val color: Long,
+    val life: Int,
+    val eliminated: Boolean = false,
+)
+
+@Serializable
+data class YuGiOhGame(
+    val players: List<YuGiOhPlayer>,
+    val startingLife: Int,        // 8000 (standard) / 4000 (classic) / custom
+    val step: Int = 100,          // amount applied by the inline − / + buttons
+    val finished: Boolean = false,
+)
+
+// ---- Pokémon TCG ----
+
+@Serializable
+data class PokemonPlayer(
+    val name: String,
+    val color: Long,
+    val prizes: Int = 6,      // prize cards still to take; reaching 0 = win
+    val damage: Int = 0,      // damage counters on the active Pokémon (multiples of 10)
+    val won: Boolean = false,
+)
+
+@Serializable
+data class PokemonGame(
+    val players: List<PokemonPlayer>,
+    val startingPrizes: Int = 6,
+    val damageStep: Int = 10,
+    val finished: Boolean = false,
+)
+
 // ---- History ----
 
 @Serializable
@@ -172,12 +209,16 @@ data class Settings(
 data class AppState(
     val users: List<User> = emptyList(),
     val savedConfigs: List<SavedConfig> = emptyList(),
+    val favoriteGames: Set<GameType> = emptySet(),
     val currentGame: CurrentGame? = null,
     val trucoMatch: TrucoMatch? = null,
     val magicGame: MagicGame? = null,
+    val yugiohGame: YuGiOhGame? = null,
+    val pokemonGame: PokemonGame? = null,
     val history: List<HistoryEntry> = emptyList(),
     val settings: Settings = Settings(),
     val pendingResult: GameResult? = null,
     val unlockedAvatars: Set<Int> = setOf(1, 2, 12, 24),
+    val avatarAdProgress: Map<Int, Int> = emptyMap(),  // avatarId → ads watched so far toward unlock
     val adBaseline: Int = 0,           // history.size when the last interstitial was shown
 )

@@ -2,49 +2,42 @@ package com.epichypernova.scoretracker.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.epichypernova.scoretracker.R
 
 /**
- * Minimalist, app-styled counter icons drawn with Canvas (no bitmap assets):
- * energy = lightning bolt, poison = droplet, experience = 4-point sparkle.
+ * Counter icons. Poison and energy use the official MTG counter symbols
+ * (vector drawables sourced from Scryfall's card-symbols), tinted to match the
+ * app palette. Experience keeps an app-styled 4-point sparkle (Scryfall has no
+ * dedicated experience symbol).
  */
 
 @Composable
 fun EnergyIcon(color: Color, size: Int = 14) {
-    Canvas(Modifier.size(size.dp)) {
-        val w = this.size.width; val h = this.size.height
-        val p = Path().apply {
-            moveTo(0.58f * w, 0.02f * h)
-            lineTo(0.18f * w, 0.56f * h)
-            lineTo(0.46f * w, 0.56f * h)
-            lineTo(0.40f * w, 0.98f * h)
-            lineTo(0.84f * w, 0.40f * h)
-            lineTo(0.54f * w, 0.40f * h)
-            close()
-        }
-        drawPath(p, color)
-    }
+    Icon(
+        painter = painterResource(R.drawable.sym_energy),
+        contentDescription = null,
+        tint = color,
+        modifier = Modifier.size(size.dp),
+    )
 }
 
 @Composable
 fun PoisonIcon(color: Color, size: Int = 14) {
-    Canvas(Modifier.size(size.dp)) {
-        val w = this.size.width; val h = this.size.height
-        val p = Path().apply {
-            moveTo(0.5f * w, 0.04f * h)
-            cubicTo(0.86f * w, 0.46f * h, 0.90f * w, 0.66f * h, 0.72f * w, 0.84f * h)
-            cubicTo(0.58f * w, 0.98f * h, 0.42f * w, 0.98f * h, 0.28f * w, 0.84f * h)
-            cubicTo(0.10f * w, 0.66f * h, 0.14f * w, 0.46f * h, 0.5f * w, 0.04f * h)
-            close()
-        }
-        drawPath(p, color)
-    }
+    Icon(
+        painter = painterResource(R.drawable.sym_poison),
+        contentDescription = null,
+        tint = color,
+        modifier = Modifier.size(size.dp),
+    )
 }
 
 @Composable

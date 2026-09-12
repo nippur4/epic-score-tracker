@@ -25,8 +25,8 @@ object GameCatalog {
     val specifics = listOf(
         GameEntry(GameType.TRUCO, "♣", Palette.GameGeneric, R.string.game_truco_title, R.string.game_truco_sub),
         GameEntry(GameType.MAGIC, "M", Palette.GameMagic, R.string.game_magic_title, R.string.game_magic_sub),
-        GameEntry(GameType.POKEMON, "P", Palette.GamePokemon, R.string.game_pokemon_title, R.string.game_pokemon_sub, available = false),
-        GameEntry(GameType.YUGIOH, "Y", Palette.GameYugioh, R.string.game_yugioh_title, R.string.game_yugioh_sub, available = false),
+        GameEntry(GameType.POKEMON, "P", Palette.GamePokemon, R.string.game_pokemon_title, R.string.game_pokemon_sub),
+        GameEntry(GameType.YUGIOH, "Y", Palette.GameYugioh, R.string.game_yugioh_title, R.string.game_yugioh_sub),
         GameEntry(GameType.DIGIMON, "D", Palette.GameDigimon, R.string.game_digimon_title, R.string.game_digimon_sub, available = false),
     )
 

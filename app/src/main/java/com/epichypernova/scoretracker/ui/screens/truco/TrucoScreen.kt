@@ -8,8 +8,6 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -221,7 +219,6 @@ private fun PorotoLabel(text: String) {
 @Composable
 private fun Spacer8() = Box(Modifier.height(10.dp))
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PorotoField(count: Int, color: Color) {
     Box(Modifier.fillMaxWidth().heightIn(min = 84.dp), contentAlignment = Alignment.Center) {
@@ -230,10 +227,10 @@ private fun PorotoField(count: Int, color: Color) {
         } else {
             val fullGroups = count / 5
             val remainder = count % 5
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth(),
+            // One group of 5 per line, stacking downward (like a truco score sheet).
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 repeat(fullGroups) { PorotoGroup(5, complete = true, color = color) }
                 if (remainder > 0) PorotoGroup(remainder, complete = false, color = color)

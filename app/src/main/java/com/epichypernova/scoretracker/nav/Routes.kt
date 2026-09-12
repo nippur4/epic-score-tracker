@@ -12,6 +12,8 @@ object Routes {
     const val END_GAME = "end_game"
     const val TRUCO = "truco"
     const val MAGIC = "magic"
+    const val YUGIOH = "yugioh"
+    const val POKEMON = "pokemon"
     const val EDIT_PLAYER = "edit_player/{userId}"
 
     fun genericSetup(gameType: String) = "generic_setup/$gameType"

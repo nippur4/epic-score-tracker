@@ -63,6 +63,8 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                     when (gt) {
                         GameType.TRUCO -> navController.navigate(Routes.TRUCO)
                         GameType.MAGIC -> navController.navigate(Routes.MAGIC)
+                        GameType.YUGIOH -> navController.navigate(Routes.YUGIOH)
+                        GameType.POKEMON -> navController.navigate(Routes.POKEMON)
                         else -> Unit
                     }
                 },
@@ -72,6 +74,8 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                         navController.navigate(Routes.GENERIC_TABLE)
                     }
                 },
+                onToggleFavorite = { gt -> repo.update { AppActions.toggleFavoriteGame(it, gt) } },
+                onDeleteConfig = { id -> repo.update { AppActions.deleteConfig(it, id) } },
             )
         }
 
@@ -145,6 +149,20 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
 
         composable(Routes.MAGIC) {
             com.epichypernova.scoretracker.ui.screens.magic.MagicScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.YUGIOH) {
+            com.epichypernova.scoretracker.ui.screens.yugioh.YuGiOhScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.POKEMON) {
+            com.epichypernova.scoretracker.ui.screens.pokemon.PokemonScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
             )

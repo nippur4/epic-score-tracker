@@ -15,6 +15,8 @@
     <string name="coming_soon">Coming soon</string>
 
     <!-- Menu -->
+    <string name="menu_section_favorites">Favorites</string>
+    <string name="delete_config_title">Delete “%1$s”?</string>
     <string name="menu_section_generics">Generic</string>
     <string name="menu_section_saved">Custom</string>
     <string name="config_name_hint">Name the configuration</string>
@@ -117,6 +119,38 @@
     <string name="magic_mode_commander">Commander</string>
     <string name="magic_mode_1v1">1 vs 1</string>
 
+    <!-- Yu-Gi-Oh -->
+    <string name="yugioh_lp">LP %1$d</string>
+    <string name="yugioh_reset">⟳ Reset</string>
+    <string name="yugioh_coin">⊚ Coin</string>
+    <string name="yugioh_eliminated">DEFEATED</string>
+    <string name="yugioh_starting_lp">Starting Life Points</string>
+    <string name="yugioh_players">Duelists</string>
+    <string name="yugioh_step">Damage step</string>
+    <string name="yugioh_calc_title">%1$s · LP</string>
+    <string name="yugioh_damage">− Damage</string>
+    <string name="yugioh_heal">+ Heal</string>
+    <string name="yugioh_set">Set</string>
+    <string name="yugioh_halve">Halve</string>
+    <string name="yugioh_flipping">Flipping…</string>
+    <string name="yugioh_heads">Heads</string>
+    <string name="yugioh_tails">Tails</string>
+    <string name="yugioh_starts">%1$s starts</string>
+
+    <!-- Pokémon TCG -->
+    <string name="pokemon_prizes">Prizes</string>
+    <string name="pokemon_damage">Damage</string>
+    <string name="pokemon_reset">⟳ Reset</string>
+    <string name="pokemon_coin">⊚ Coin</string>
+    <string name="pokemon_won">WINNER!</string>
+    <string name="pokemon_players">Players</string>
+    <string name="pokemon_starting_prizes">Starting prizes</string>
+    <string name="pokemon_step">Damage step</string>
+    <string name="pokemon_flipping">Flipping…</string>
+    <string name="pokemon_heads">Heads</string>
+    <string name="pokemon_tails">Tails</string>
+    <string name="pokemon_starts">%1$s starts</string>
+
     <!-- Players -->
     <string name="players_saved_here">Saved on this phone</string>
     <string name="players_title">Players</string>
@@ -128,10 +162,18 @@
     <string name="edit_player">Edit player</string>
     <string name="name">Name</string>
     <string name="color">Color</string>
+    <string name="magic_pick_color_title">Player color</string>
+    <string name="magic_pick_color_sub">Pick a color to identify this player</string>
     <string name="avatar">Avatar</string>
     <string name="unlock">Unlock</string>
     <string name="unlock_avatars_title">Unlock avatars</string>
-    <string name="unlock_avatars_sub">Watch an ad to unlock each one</string>
+    <string name="unlock_avatars_sub">Watch ads to unlock each one</string>
+    <string name="unlock_watch_button">Watch ad</string>
+    <string name="unlock_progress">%1$d/%2$d watched</string>
+    <plurals name="unlock_watch_ads">
+        <item quantity="one">Watch %1$d ad to unlock</item>
+        <item quantity="other">Watch %1$d ads to unlock</item>
+    </plurals>
     <string name="new_player_name_hint">Player name</string>
     <string name="create_and_add">Create and add</string>
     <string name="or_create_new">Or create a new one</string>

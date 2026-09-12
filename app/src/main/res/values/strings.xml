@@ -15,6 +15,8 @@
     <string name="coming_soon">Próximamente</string>
 
     <!-- Menu -->
+    <string name="menu_section_favorites">Favoritos</string>
+    <string name="delete_config_title">¿Eliminar «%1$s»?</string>
     <string name="menu_section_generics">Genéricos</string>
     <string name="menu_section_saved">Personalizados</string>
     <string name="config_name_hint">Poné un nombre a la configuración</string>
@@ -117,6 +119,38 @@
     <string name="magic_mode_commander">Commander</string>
     <string name="magic_mode_1v1">1 vs 1</string>
 
+    <!-- Yu-Gi-Oh -->
+    <string name="yugioh_lp">LP %1$d</string>
+    <string name="yugioh_reset">⟳ Reiniciar</string>
+    <string name="yugioh_coin">⊚ Moneda</string>
+    <string name="yugioh_eliminated">DERROTADO</string>
+    <string name="yugioh_starting_lp">Life Points iniciales</string>
+    <string name="yugioh_players">Duelistas</string>
+    <string name="yugioh_step">Paso de daño</string>
+    <string name="yugioh_calc_title">%1$s · LP</string>
+    <string name="yugioh_damage">− Daño</string>
+    <string name="yugioh_heal">+ Curar</string>
+    <string name="yugioh_set">Fijar</string>
+    <string name="yugioh_halve">Mitad</string>
+    <string name="yugioh_flipping">Girando…</string>
+    <string name="yugioh_heads">Cara</string>
+    <string name="yugioh_tails">Cruz</string>
+    <string name="yugioh_starts">Empieza %1$s</string>
+
+    <!-- Pokémon TCG -->
+    <string name="pokemon_prizes">Premios</string>
+    <string name="pokemon_damage">Daño</string>
+    <string name="pokemon_reset">⟳ Reiniciar</string>
+    <string name="pokemon_coin">⊚ Moneda</string>
+    <string name="pokemon_won">¡GANÓ!</string>
+    <string name="pokemon_players">Jugadores</string>
+    <string name="pokemon_starting_prizes">Premios iniciales</string>
+    <string name="pokemon_step">Paso de daño</string>
+    <string name="pokemon_flipping">Girando…</string>
+    <string name="pokemon_heads">Cara</string>
+    <string name="pokemon_tails">Cruz</string>
+    <string name="pokemon_starts">Empieza %1$s</string>
+
     <!-- Players -->
     <string name="players_saved_here">Guardados en este teléfono</string>
     <string name="players_title">Jugadores</string>
@@ -128,10 +162,18 @@
     <string name="edit_player">Editar jugador</string>
     <string name="name">Nombre</string>
     <string name="color">Color</string>
+    <string name="magic_pick_color_title">Color del jugador</string>
+    <string name="magic_pick_color_sub">Elegí un color para identificar a este jugador</string>
     <string name="avatar">Avatar</string>
     <string name="unlock">Desbloquear</string>
     <string name="unlock_avatars_title">Desbloquear avatares</string>
-    <string name="unlock_avatars_sub">Mirá un anuncio para desbloquear cada uno</string>
+    <string name="unlock_avatars_sub">Mirá publicidades para desbloquear cada uno</string>
+    <string name="unlock_watch_button">Ver publicidad</string>
+    <string name="unlock_progress">%1$d/%2$d vistas</string>
+    <plurals name="unlock_watch_ads">
+        <item quantity="one">Mirá %1$d publicidad para desbloquear</item>
+        <item quantity="other">Mirá %1$d publicidades para desbloquear</item>
+    </plurals>
     <string name="new_player_name_hint">Nombre del jugador</string>
     <string name="create_and_add">Crear y agregar</string>
     <string name="or_create_new">O creá uno nuevo</string>

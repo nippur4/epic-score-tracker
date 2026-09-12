@@ -64,8 +64,16 @@ fun MenuScreen(
     onStartGeneric: (GameType) -> Unit,
     onOpenSpecific: (GameType) -> Unit,
     onStartConfig: (SavedConfig) -> Unit,
+    onToggleFavorite: (GameType) -> Unit,
+    onDeleteConfig: (String) -> Unit,
 ) {
     var grid by remember { mutableStateOf(false) }
+    var configToDelete by remember { mutableStateOf<SavedConfig?>(null) }
+
+    // Launch a game by type, dispatching generic vs specific screens.
+    val launch: (GameType) -> Unit = { gt -> if (gt.isGeneric) onStartGeneric(gt) else onOpenSpecific(gt) }
+    val favoriteEntries = (GameCatalog.generics + GameCatalog.specifics)
+        .filter { it.available && it.gameType in state.favoriteGames }
     TabScaffold(
         selected = AppTab.JUEGOS,
         tabLabels = tabLabels,
@@ -94,6 +102,18 @@ fun MenuScreen(
             ) {
                 item { MenuHeader(onToggleView = { grid = true }) }
 
+                if (favoriteEntries.isNotEmpty()) {
+                    item { SectionLabel(stringResource(R.string.menu_section_favorites), modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)) }
+                    items(favoriteEntries, key = { "fav_" + it.gameType.name }) { e ->
+                        GameRow(
+                            e.glyph, e.tint, stringResource(e.titleRes), stringResource(e.subtitleRes),
+                            onClick = { launch(e.gameType) },
+                            favorite = true,
+                            onToggleFavorite = { onToggleFavorite(e.gameType) },
+                        )
+                    }
+                }
+
                 state.currentGame?.let { game ->
                     item {
                         EnCursoCard(state, onOpenCurrent)
@@ -102,7 +122,12 @@ fun MenuScreen(
 
                 item { SectionLabel(stringResource(R.string.menu_section_generics), modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)) }
                 items(GameCatalog.generics) { e ->
-                    GameRow(e.glyph, e.tint, stringResource(e.titleRes), stringResource(e.subtitleRes), onClick = { onStartGeneric(e.gameType) })
+                    GameRow(
+                        e.glyph, e.tint, stringResource(e.titleRes), stringResource(e.subtitleRes),
+                        onClick = { onStartGeneric(e.gameType) },
+                        favorite = e.gameType in state.favoriteGames,
+                        onToggleFavorite = { onToggleFavorite(e.gameType) },
+                    )
                 }
 
                 if (state.savedConfigs.isNotEmpty()) {
@@ -118,7 +143,7 @@ fun MenuScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             state.savedConfigs.forEach { cfg ->
-                                SavedConfigCard(cfg, onClick = { onStartConfig(cfg) })
+                                SavedConfigCard(cfg, onClick = { onStartConfig(cfg) }, onDelete = { configToDelete = cfg })
                             }
                         }
                     }
@@ -131,10 +156,20 @@ fun MenuScreen(
                         if (e.available) stringResource(e.subtitleRes) else stringResource(R.string.coming_soon),
                         onClick = { if (e.available) onOpenSpecific(e.gameType) },
                         enabled = e.available,
+                        favorite = e.gameType in state.favoriteGames,
+                        onToggleFavorite = if (e.available) ({ onToggleFavorite(e.gameType) }) else null,
                     )
                 }
             }
         }
+    }
+
+    configToDelete?.let { cfg ->
+        DeleteConfigDialog(
+            name = cfg.name,
+            onConfirm = { onDeleteConfig(cfg.id); configToDelete = null },
+            onDismiss = { configToDelete = null },
+        )
     }
 }
 
@@ -208,8 +243,8 @@ private fun EnCursoCard(state: AppState, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SavedConfigCard(cfg: SavedConfig, onClick: () -> Unit) {
-    Column(
+private fun SavedConfigCard(cfg: SavedConfig, onClick: () -> Unit, onDelete: () -> Unit) {
+    Box(
         Modifier
             .width(180.dp)
             .clip(RoundedCornerShape(16.dp))
@@ -217,20 +252,47 @@ private fun SavedConfigCard(cfg: SavedConfig, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Text(
-            cfg.name,
-            color = Palette.TextPrimary,
-            style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
-        )
-        Text(
-            stringResource(
-                R.string.saved_config_detail,
-                cfg.playerIds.size,
-                cfg.rules.targetScore,
-                stringResource(if (cfg.rules.lowWins) R.string.wins_menor_word else R.string.wins_mayor_word),
-            ),
-            color = Palette.TextTertiary,
-            style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
-        )
+        Column(Modifier.padding(end = 22.dp)) {
+            Text(
+                cfg.name,
+                color = Palette.TextPrimary,
+                style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
+            )
+            Text(
+                stringResource(
+                    R.string.saved_config_detail,
+                    cfg.playerIds.size,
+                    cfg.rules.targetScore,
+                    stringResource(if (cfg.rules.lowWins) R.string.wins_menor_word else R.string.wins_mayor_word),
+                ),
+                color = Palette.TextTertiary,
+                style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
+            )
+        }
+        Box(
+            Modifier.align(Alignment.TopEnd).size(26.dp).clip(CircleShape).clickable { onDelete() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("✕", color = Palette.TextTertiary, style = TextStyle(fontSize = 13.sp))
+        }
     }
+}
+
+@Composable
+private fun DeleteConfigDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.delete), color = Palette.Magenta)
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel), color = Palette.TextSecondary)
+            }
+        },
+        title = { Text(stringResource(R.string.delete_config_title, name), color = Palette.TextPrimary) },
+        containerColor = Palette.SheetSurface,
+    )
 }

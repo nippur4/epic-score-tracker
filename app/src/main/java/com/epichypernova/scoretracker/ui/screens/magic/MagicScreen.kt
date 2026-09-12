@@ -413,19 +413,36 @@ private fun ColorPickDialog(current: Long, onPick: (Long) -> Unit, onClose: () -
     AlertDialog(
         onDismissRequest = onClose,
         confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.done), color = Palette.Cyan) } },
-        title = { Text(stringResource(R.string.color), color = Palette.TextPrimary) },
+        title = { Text(stringResource(R.string.magic_pick_color_title), color = Palette.TextPrimary) },
         text = {
-            androidx.compose.foundation.layout.FlowRow(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                MAGIC_COLORS.forEach { c ->
-                    val active = c == current
-                    Box(
-                        Modifier.size(44.dp).then(if (active) Modifier.border(2.dp, Palette.Cyan, CircleShape) else Modifier).clickable { onPick(c); onClose() },
-                        contentAlignment = Alignment.Center,
-                    ) { Box(Modifier.size(38.dp).clip(CircleShape).background(Color(c))) }
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    stringResource(R.string.magic_pick_color_sub),
+                    color = Palette.TextTertiary,
+                    style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 13.sp),
+                )
+                androidx.compose.foundation.layout.FlowRow(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    MAGIC_COLORS.forEach { c ->
+                        val active = c == current
+                        val swatch = Color(c)
+                        // Perceived luminance → pick a check color that contrasts with the swatch.
+                        val lum = 0.299f * swatch.red + 0.587f * swatch.green + 0.114f * swatch.blue
+                        val onColor = if (lum > 0.6f) Color.Black else Color.White
+                        Box(
+                            Modifier.size(48.dp)
+                                .clip(CircleShape)
+                                .background(swatch)
+                                .then(if (active) Modifier.border(3.dp, Palette.TextPrimary, CircleShape) else Modifier.border(1.dp, Color(0x33FFFFFF), CircleShape))
+                                .clickable { onPick(c); onClose() },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (active) Text("✓", color = onColor, style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Black))
+                        }
+                    }
                 }
             }
         },
@@ -444,6 +461,7 @@ private fun StarterDrawOverlay(
     var settled by remember { mutableStateOf(false) }
     var winner by remember { mutableStateOf(-1) }
     val diceSound = rememberSoundEffect(R.raw.dice)
+    val victorySound = rememberSoundEffect(R.raw.victory)
 
     LaunchedEffect(Unit) {
         diceSound()
@@ -458,6 +476,7 @@ private fun StarterDrawOverlay(
         val max = finalFaces.max()
         winner = finalFaces.indices.filter { finalFaces[it] == max }.random()
         settled = true
+        victorySound()
         onSettled(winner)
     }
 
