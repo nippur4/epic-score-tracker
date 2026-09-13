@@ -11,7 +11,12 @@ enum class GameType {
     MAGIC,
     POKEMON,
     YUGIOH,
-    DIGIMON;
+    DIGIMON,
+    LORCANA,
+    ONEPIECE,
+    CHINCHON,
+    BURAKO,
+    DARTS;
 
     val isGeneric: Boolean get() = this == MANOS_Y_PUNTOS || this == CONTADOR_SIMPLE
 }
@@ -164,6 +169,107 @@ data class PokemonGame(
     val finished: Boolean = false,
 )
 
+// ---- Digimon TCG ----
+
+@Serializable
+data class DigimonPlayer(
+    val name: String,
+    val color: Long,
+    val security: Int = 5,       // security stack; taking a hit at 0 = defeat
+    val defeated: Boolean = false,
+)
+
+@Serializable
+data class DigimonGame(
+    val players: List<DigimonPlayer>,     // always 2 (1v1)
+    val startingSecurity: Int = 5,
+    val memory: Int = 0,                  // shared memory gauge, -10..+10 (− = top player, + = bottom)
+    val finished: Boolean = false,
+)
+
+// ---- Disney Lorcana ----
+
+@Serializable
+data class LorcanaPlayer(
+    val name: String,
+    val color: Long,
+    val lore: Int = 0,       // reaching targetLore wins
+    val won: Boolean = false,
+)
+
+@Serializable
+data class LorcanaGame(
+    val players: List<LorcanaPlayer>,
+    val targetLore: Int = 20,
+    val finished: Boolean = false,
+)
+
+// ---- One Piece Card Game ----
+
+@Serializable
+data class OnePiecePlayer(
+    val name: String,
+    val color: Long,
+    val life: Int = 5,        // life cards; taking a hit at 0 = defeat
+    val don: Int = 0,         // active DON!! (0..10)
+    val defeated: Boolean = false,
+)
+
+@Serializable
+data class OnePieceGame(
+    val players: List<OnePiecePlayer>,     // always 2 (1v1)
+    val startingLife: Int = 5,
+    val finished: Boolean = false,
+)
+
+// ---- Chinchón ----
+
+@Serializable
+data class ChinchonPlayer(
+    val name: String,
+    val color: Long,
+    val score: Int = 0,
+)
+
+@Serializable
+data class ChinchonGame(
+    val players: List<ChinchonPlayer>,
+    val target: Int = 100,        // reaching/exceeding it ends the game; lowest score wins
+    val finished: Boolean = false,
+)
+
+// ---- Burako ----
+
+@Serializable
+data class BurakoTeam(
+    val name: String,
+    val color: Long,
+    val score: Int = 0,
+)
+
+@Serializable
+data class BurakoGame(
+    val teams: List<BurakoTeam>,  // always 2
+    val target: Int = 2000,       // first to reach it wins (highest)
+    val finished: Boolean = false,
+)
+
+// ---- Darts 501 ----
+
+@Serializable
+data class DartsPlayer(
+    val name: String,
+    val color: Long,
+    val remaining: Int = 501,
+)
+
+@Serializable
+data class DartsGame(
+    val players: List<DartsPlayer>,
+    val startScore: Int = 501,
+    val finished: Boolean = false,
+)
+
 // ---- History ----
 
 @Serializable
@@ -215,6 +321,12 @@ data class AppState(
     val magicGame: MagicGame? = null,
     val yugiohGame: YuGiOhGame? = null,
     val pokemonGame: PokemonGame? = null,
+    val digimonGame: DigimonGame? = null,
+    val lorcanaGame: LorcanaGame? = null,
+    val onePieceGame: OnePieceGame? = null,
+    val chinchonGame: ChinchonGame? = null,
+    val burakoGame: BurakoGame? = null,
+    val dartsGame: DartsGame? = null,
     val history: List<HistoryEntry> = emptyList(),
     val settings: Settings = Settings(),
     val pendingResult: GameResult? = null,

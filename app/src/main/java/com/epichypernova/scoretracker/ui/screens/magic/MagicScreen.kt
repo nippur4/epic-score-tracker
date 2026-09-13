@@ -246,10 +246,10 @@ private fun MagicPane(
                 Column(Modifier.padding(top = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     CounterChip(player.poison, Palette.Mint,
                         onDec = { repo.update { AppActions.magicPoison(it, index, -1) } },
-                        onInc = { repo.update { AppActions.magicPoison(it, index, +1) } }) { PoisonIcon(Palette.Mint, 18) }
+                        onInc = { repo.update { AppActions.magicPoison(it, index, +1) } }) { PoisonIcon(Palette.TextPrimary, 18) }
                     CounterChip(player.energy, Palette.Cyan,
                         onDec = { repo.update { AppActions.magicEnergy(it, index, -1) } },
-                        onInc = { repo.update { AppActions.magicEnergy(it, index, +1) } }) { EnergyIcon(Palette.Cyan, 18) }
+                        onInc = { repo.update { AppActions.magicEnergy(it, index, +1) } }) { EnergyIcon(Palette.TextPrimary, 18) }
                     if (commander) {
                         CounterChip(player.experience, EXP_COLOR,
                             onDec = { repo.update { AppActions.magicExperience(it, index, -1) } },

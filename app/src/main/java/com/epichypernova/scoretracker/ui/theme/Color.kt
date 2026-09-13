@@ -61,6 +61,11 @@ object Palette {
     val GamePokemon = Color(0xFF55E6A5)
     val GameYugioh = Color(0xFFFF6FA8)
     val GameDigimon = Color(0xFF3B7BF7)
+    val GameLorcana = Color(0xFFF2B33B)     // amber/ink
+    val GameOnePiece = Color(0xFFE0492F)    // red
+    val GameChinchon = Color(0xFF4FB35B)    // green
+    val GameBurako = Color(0xFFF27BA9)      // rose
+    val GameDarts = Color(0xFFEB5757)       // dart red
     val GameGeneric = Color(0xFF2FD3F0)     // truco / genéricos
 
     // Truco palettes

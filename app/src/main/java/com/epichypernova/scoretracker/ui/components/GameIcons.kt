@@ -61,6 +61,62 @@ fun ExperienceIcon(color: Color, size: Int = 14) {
     }
 }
 
+/** Minimalist padlock (outline + keyhole), drawn in a single color. */
+@Composable
+fun LockIcon(color: Color, size: Int = 16) {
+    Canvas(Modifier.size(size.dp)) {
+        val w = this.size.width; val h = this.size.height
+        val sw = w * 0.09f
+        // shackle (inverted-U arc on top)
+        drawArc(
+            color = color,
+            startAngle = 180f, sweepAngle = 180f, useCenter = false,
+            topLeft = Offset(0.32f * w, 0.16f * h),
+            size = androidx.compose.ui.geometry.Size(0.36f * w, 0.40f * h),
+            style = Stroke(width = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+        )
+        // body
+        val body = androidx.compose.ui.geometry.RoundRect(
+            0.20f * w, 0.44f * h, 0.80f * w, 0.90f * h,
+            androidx.compose.ui.geometry.CornerRadius(w * 0.10f, w * 0.10f),
+        )
+        drawPath(Path().apply { addRoundRect(body) }, color, style = Stroke(width = sw))
+        // keyhole
+        drawCircle(color, radius = w * 0.06f, center = Offset(0.5f * w, 0.62f * h))
+        drawLine(color, Offset(0.5f * w, 0.62f * h), Offset(0.5f * w, 0.76f * h), strokeWidth = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+    }
+}
+
+/**
+ * Minimalist speaker with [waves] sound arcs (0..2). When [muted] a slash is drawn instead
+ * of the waves. Single color.
+ */
+@Composable
+fun SpeakerIcon(color: Color, size: Int = 18, waves: Int = 2, muted: Boolean = false) {
+    Canvas(Modifier.size(size.dp)) {
+        val w = this.size.width; val h = this.size.height
+        val sw = w * 0.08f
+        // speaker body + cone as one filled path
+        val p = Path().apply {
+            moveTo(0.10f * w, 0.40f * h)
+            lineTo(0.26f * w, 0.40f * h)
+            lineTo(0.46f * w, 0.20f * h)
+            lineTo(0.46f * w, 0.80f * h)
+            lineTo(0.26f * w, 0.60f * h)
+            lineTo(0.10f * w, 0.60f * h)
+            close()
+        }
+        drawPath(p, color)
+        if (muted) {
+            drawLine(color, Offset(0.58f * w, 0.34f * h), Offset(0.90f * w, 0.66f * h), strokeWidth = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(color, Offset(0.90f * w, 0.34f * h), Offset(0.58f * w, 0.66f * h), strokeWidth = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        } else {
+            if (waves >= 1) drawArc(color, -55f, 110f, false, topLeft = Offset(0.40f * w, 0.30f * h), size = androidx.compose.ui.geometry.Size(0.28f * w, 0.40f * h), style = Stroke(width = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            if (waves >= 2) drawArc(color, -55f, 110f, false, topLeft = Offset(0.40f * w, 0.18f * h), size = androidx.compose.ui.geometry.Size(0.48f * w, 0.64f * h), style = Stroke(width = sw, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+    }
+}
+
 // ---- Bottom navigation icons (minimalist, app-styled) ----
 
 /** Juegos: a spade suit. */

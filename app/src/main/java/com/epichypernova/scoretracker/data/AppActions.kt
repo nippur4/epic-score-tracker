@@ -10,6 +10,18 @@ import com.epichypernova.scoretracker.data.model.ResultLine
 import com.epichypernova.scoretracker.data.model.HistoryEntry
 import com.epichypernova.scoretracker.data.model.MagicGame
 import com.epichypernova.scoretracker.data.model.MagicPlayer
+import com.epichypernova.scoretracker.data.model.DigimonGame
+import com.epichypernova.scoretracker.data.model.DigimonPlayer
+import com.epichypernova.scoretracker.data.model.BurakoGame
+import com.epichypernova.scoretracker.data.model.BurakoTeam
+import com.epichypernova.scoretracker.data.model.ChinchonGame
+import com.epichypernova.scoretracker.data.model.ChinchonPlayer
+import com.epichypernova.scoretracker.data.model.DartsGame
+import com.epichypernova.scoretracker.data.model.DartsPlayer
+import com.epichypernova.scoretracker.data.model.LorcanaGame
+import com.epichypernova.scoretracker.data.model.LorcanaPlayer
+import com.epichypernova.scoretracker.data.model.OnePieceGame
+import com.epichypernova.scoretracker.data.model.OnePiecePlayer
 import com.epichypernova.scoretracker.data.model.PokemonGame
 import com.epichypernova.scoretracker.data.model.PokemonPlayer
 import com.epichypernova.scoretracker.data.model.Round
@@ -47,10 +59,6 @@ object AppActions {
     /** Deletes a user but keeps their finished games in history. */
     fun deleteUser(s: AppState, id: String): AppState =
         s.copy(users = s.users.filterNot { it.id == id })
-
-    /** Unlocks an avatar (after a rewarded ad). */
-    fun unlockAvatar(s: AppState, id: Int): AppState =
-        s.copy(unlockedAvatars = s.unlockedAvatars + id)
 
     /** How many rewarded ads an avatar costs to unlock. Avatar 30 is the premium one (5). */
     fun adsRequiredForAvatar(id: Int): Int = if (id == 30) 5 else 1
@@ -611,6 +619,462 @@ object AppActions {
         return s.copy(pokemonGame = g.copy(finished = false, players = g.players.map {
             it.copy(prizes = g.startingPrizes, damage = 0, won = false)
         }))
+    }
+
+    // ---------- Digimon TCG ----------
+
+    private val digimonPalette = listOf(0xFF3B7BF7, 0xFFF2B33B)
+    private val digimonNames = listOf("Tamer 1", "Tamer 2")
+
+    fun digimonStart(s: AppState, startingSecurity: Int = 5): AppState {
+        val sec = startingSecurity.coerceIn(1, 10)
+        val players = (0 until 2).map { i -> DigimonPlayer(name = digimonNames[i], color = digimonPalette[i], security = sec) }
+        return s.copy(digimonGame = DigimonGame(players = players, startingSecurity = sec))
+    }
+
+    fun digimonEnsureExists(s: AppState): AppState =
+        if (s.digimonGame != null) s else digimonStart(s)
+
+    fun digimonSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.digimonGame ?: return s
+        return s.copy(digimonGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    /** Sets a new starting security and resets both tamers to it. */
+    fun digimonSetSecurity(s: AppState, startingSecurity: Int): AppState {
+        val g = s.digimonGame ?: return s
+        val sec = startingSecurity.coerceIn(1, 10)
+        return s.copy(digimonGame = g.copy(startingSecurity = sec, finished = false, memory = 0, players = g.players.map {
+            it.copy(security = sec, defeated = false)
+        }))
+    }
+
+    /**
+     * Adjusts a tamer's security stack. Taking a hit (negative delta) while already at 0
+     * is the finishing blow → that tamer is defeated.
+     */
+    fun digimonSecurity(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.digimonGame ?: return s
+        val updated = g.copy(players = g.players.mapIndexed { i, p ->
+            if (i != index) p else {
+                val next = p.security + delta
+                if (next < 0) p.copy(security = 0, defeated = true)
+                else p.copy(security = next.coerceAtMost(10))
+            }
+        })
+        return checkDigimonEnd(s.copy(digimonGame = updated))
+    }
+
+    /** Moves the shared memory gauge (clamped to -10..+10). */
+    fun digimonMemory(s: AppState, delta: Int): AppState {
+        val g = s.digimonGame ?: return s
+        return s.copy(digimonGame = g.copy(memory = (g.memory + delta).coerceIn(-10, 10)))
+    }
+
+    fun digimonSetMemory(s: AppState, value: Int): AppState {
+        val g = s.digimonGame ?: return s
+        return s.copy(digimonGame = g.copy(memory = value.coerceIn(-10, 10)))
+    }
+
+    private fun checkDigimonEnd(s: AppState): AppState {
+        val g = s.digimonGame ?: return s
+        if (g.finished) return s
+        val defeated = g.players.filter { it.defeated }
+        if (defeated.isEmpty()) return s
+        val winner = g.players.firstOrNull { !it.defeated }
+        val wName = winner?.name ?: "—"
+        val lines = g.players.map { ResultLine(it.name, it.security.toString(), it.color, it == winner) }
+        val summary = "Digimon · $wName"
+        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        return s.copy(
+            digimonGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.DIGIMON, "Digimon", listOf(wName), lines, summary),
+        )
+    }
+
+    /** Ends the duel now: winner = most security remaining. */
+    fun digimonFinish(s: AppState): AppState {
+        val g = s.digimonGame ?: return s
+        val best = g.players.maxByOrNull { it.security }?.security
+        val winners = g.players.filter { it.security == best }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.security.toString(), it.color, it in winners) }
+        val summary = "Digimon · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            digimonGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.DIGIMON, "Digimon", wNames, lines, summary),
+        )
+    }
+
+    fun digimonReset(s: AppState): AppState {
+        val g = s.digimonGame ?: return s
+        return s.copy(digimonGame = g.copy(finished = false, memory = 0, players = g.players.map {
+            it.copy(security = g.startingSecurity, defeated = false)
+        }))
+    }
+
+    // ---------- Disney Lorcana ----------
+
+    private val lorcanaPalette = listOf(0xFFF2B33B, 0xFF4AA3FF, 0xFF55E6A5, 0xFFA18AF5)
+    private val lorcanaNames = listOf("Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4")
+
+    fun lorcanaStart(s: AppState, count: Int, targetLore: Int = 20): AppState {
+        val target = targetLore.coerceIn(1, 99)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i -> LorcanaPlayer(name = lorcanaNames[i], color = lorcanaPalette[i]) }
+        return s.copy(lorcanaGame = LorcanaGame(players = players, targetLore = target))
+    }
+
+    fun lorcanaEnsureExists(s: AppState): AppState =
+        if (s.lorcanaGame != null) s else lorcanaStart(s, count = 2)
+
+    fun lorcanaConfigure(s: AppState, count: Int, targetLore: Int): AppState {
+        val g = s.lorcanaGame ?: return lorcanaStart(s, count, targetLore)
+        val target = targetLore.coerceIn(1, 99)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i ->
+            val prev = g.players.getOrNull(i)
+            LorcanaPlayer(name = prev?.name ?: lorcanaNames[i], color = prev?.color ?: lorcanaPalette[i])
+        }
+        return s.copy(lorcanaGame = g.copy(players = players, targetLore = target, finished = false))
+    }
+
+    fun lorcanaSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.lorcanaGame ?: return s
+        return s.copy(lorcanaGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    /** Adjusts a player's lore (0..target). Reaching the target wins the game. */
+    fun lorcanaLore(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.lorcanaGame ?: return s
+        val updated = g.copy(players = g.players.mapIndexed { i, p ->
+            if (i != index) p else {
+                val next = (p.lore + delta).coerceIn(0, g.targetLore)
+                p.copy(lore = next, won = next >= g.targetLore)
+            }
+        })
+        return checkLorcanaEnd(s.copy(lorcanaGame = updated))
+    }
+
+    private fun checkLorcanaEnd(s: AppState): AppState {
+        val g = s.lorcanaGame ?: return s
+        if (g.finished) return s
+        val winners = g.players.filter { it.won }
+        if (winners.isEmpty()) return s
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, "${it.lore}/${g.targetLore}", it.color, it in winners) }
+        val summary = "Lorcana · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            lorcanaGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.LORCANA, "Lorcana", wNames, lines, summary),
+        )
+    }
+
+    /** Ends now: winner = most lore. */
+    fun lorcanaFinish(s: AppState): AppState {
+        val g = s.lorcanaGame ?: return s
+        val best = g.players.maxByOrNull { it.lore }?.lore
+        val winners = g.players.filter { it.lore == best }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, "${it.lore}/${g.targetLore}", it.color, it in winners) }
+        val summary = "Lorcana · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            lorcanaGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.LORCANA, "Lorcana", wNames, lines, summary),
+        )
+    }
+
+    fun lorcanaReset(s: AppState): AppState {
+        val g = s.lorcanaGame ?: return s
+        return s.copy(lorcanaGame = g.copy(finished = false, players = g.players.map { it.copy(lore = 0, won = false) }))
+    }
+
+    // ---------- One Piece Card Game ----------
+
+    private val onePiecePalette = listOf(0xFFE0492F, 0xFF4AA3FF)
+    private val onePieceNames = listOf("Jugador 1", "Jugador 2")
+
+    fun onePieceStart(s: AppState, startingLife: Int = 5): AppState {
+        val life = startingLife.coerceIn(1, 10)
+        val players = (0 until 2).map { i -> OnePiecePlayer(name = onePieceNames[i], color = onePiecePalette[i], life = life) }
+        return s.copy(onePieceGame = OnePieceGame(players = players, startingLife = life))
+    }
+
+    fun onePieceEnsureExists(s: AppState): AppState =
+        if (s.onePieceGame != null) s else onePieceStart(s)
+
+    fun onePieceSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.onePieceGame ?: return s
+        return s.copy(onePieceGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    /** Sets a new starting life and resets both players (life + DON). */
+    fun onePieceSetLife(s: AppState, startingLife: Int): AppState {
+        val g = s.onePieceGame ?: return s
+        val life = startingLife.coerceIn(1, 10)
+        return s.copy(onePieceGame = g.copy(startingLife = life, finished = false, players = g.players.map {
+            it.copy(life = life, don = 0, defeated = false)
+        }))
+    }
+
+    /** Adjusts life cards. Taking a hit (negative) while at 0 = defeat. */
+    fun onePieceLife(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.onePieceGame ?: return s
+        val updated = g.copy(players = g.players.mapIndexed { i, p ->
+            if (i != index) p else {
+                val next = p.life + delta
+                if (next < 0) p.copy(life = 0, defeated = true)
+                else p.copy(life = next.coerceAtMost(10))
+            }
+        })
+        return checkOnePieceEnd(s.copy(onePieceGame = updated))
+    }
+
+    /** Adjusts active DON!! (0..10). */
+    fun onePieceDon(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.onePieceGame ?: return s
+        return s.copy(onePieceGame = g.copy(players = g.players.mapIndexed { i, p ->
+            if (i == index) p.copy(don = (p.don + delta).coerceIn(0, 10)) else p
+        }))
+    }
+
+    private fun checkOnePieceEnd(s: AppState): AppState {
+        val g = s.onePieceGame ?: return s
+        if (g.finished) return s
+        val defeated = g.players.filter { it.defeated }
+        if (defeated.isEmpty()) return s
+        val winner = g.players.firstOrNull { !it.defeated }
+        val wName = winner?.name ?: "—"
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
+        val summary = "One Piece · $wName"
+        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        return s.copy(
+            onePieceGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.ONEPIECE, "One Piece", listOf(wName), lines, summary),
+        )
+    }
+
+    /** Ends now: winner = most life remaining. */
+    fun onePieceFinish(s: AppState): AppState {
+        val g = s.onePieceGame ?: return s
+        val best = g.players.maxByOrNull { it.life }?.life
+        val winners = g.players.filter { it.life == best }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
+        val summary = "One Piece · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(
+            onePieceGame = g.copy(finished = true),
+            history = listOf(entry) + s.history,
+            pendingResult = GameResult(GameType.ONEPIECE, "One Piece", wNames, lines, summary),
+        )
+    }
+
+    fun onePieceReset(s: AppState): AppState {
+        val g = s.onePieceGame ?: return s
+        return s.copy(onePieceGame = g.copy(finished = false, players = g.players.map {
+            it.copy(life = g.startingLife, don = 0, defeated = false)
+        }))
+    }
+
+    // ---------- Chinchón ----------
+
+    private val chinchonPalette = listOf(0xFF4FB35B, 0xFF2FD3F0, 0xFFF2B33B, 0xFFA18AF5)
+    private val chinchonNames = listOf("Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4")
+
+    fun chinchonStart(s: AppState, count: Int, target: Int = 100): AppState {
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i -> ChinchonPlayer(name = chinchonNames[i], color = chinchonPalette[i]) }
+        return s.copy(chinchonGame = ChinchonGame(players = players, target = target.coerceAtLeast(1)))
+    }
+
+    fun chinchonEnsureExists(s: AppState): AppState =
+        if (s.chinchonGame != null) s else chinchonStart(s, count = 2)
+
+    fun chinchonConfigure(s: AppState, count: Int, target: Int): AppState {
+        val g = s.chinchonGame ?: return chinchonStart(s, count, target)
+        val n = count.coerceIn(2, 4)
+        val players = (0 until n).map { i ->
+            val prev = g.players.getOrNull(i)
+            ChinchonPlayer(name = prev?.name ?: chinchonNames[i], color = prev?.color ?: chinchonPalette[i])
+        }
+        return s.copy(chinchonGame = g.copy(players = players, target = target.coerceAtLeast(1), finished = false))
+    }
+
+    fun chinchonSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.chinchonGame ?: return s
+        return s.copy(chinchonGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    /** Adds this round's points to a player (never below 0). Crossing the target ends the game. */
+    fun chinchonAdd(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.chinchonGame ?: return s
+        val updated = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(score = (p.score + delta).coerceAtLeast(0)) else p })
+        return checkChinchonEnd(s.copy(chinchonGame = updated))
+    }
+
+    private fun checkChinchonEnd(s: AppState): AppState {
+        val g = s.chinchonGame ?: return s
+        if (g.finished) return s
+        if (g.players.none { it.score >= g.target }) return s
+        val best = g.players.minByOrNull { it.score }
+        val winners = g.players.filter { it.score == best?.score }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
+        val summary = "Chinchón · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.CHINCHON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(chinchonGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.CHINCHON, "Chinchón", wNames, lines, summary))
+    }
+
+    /** Instant win for a player who closed with chinchón. */
+    fun chinchonInstantWin(s: AppState, index: Int): AppState {
+        val g = s.chinchonGame ?: return s
+        val winner = g.players.getOrNull(index) ?: return s
+        val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it == winner) }
+        val summary = "Chinchón · ${winner.name}"
+        val entry = HistoryEntry(newId("h"), GameType.CHINCHON, emptyList(), g.players.map { it.name }, listOf(winner.name), summary, System.currentTimeMillis())
+        return s.copy(chinchonGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.CHINCHON, "Chinchón", listOf(winner.name), lines, summary))
+    }
+
+    fun chinchonFinish(s: AppState): AppState {
+        val g = s.chinchonGame ?: return s
+        val best = g.players.minByOrNull { it.score }
+        val winners = g.players.filter { it.score == best?.score }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
+        val summary = "Chinchón · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.CHINCHON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(chinchonGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.CHINCHON, "Chinchón", wNames, lines, summary))
+    }
+
+    fun chinchonReset(s: AppState): AppState {
+        val g = s.chinchonGame ?: return s
+        return s.copy(chinchonGame = g.copy(finished = false, players = g.players.map { it.copy(score = 0) }))
+    }
+
+    // ---------- Burako ----------
+
+    fun burakoStart(s: AppState, target: Int = 2000): AppState {
+        val teams = listOf(
+            BurakoTeam("Nosotros", 0xFFF27BA9, 0),
+            BurakoTeam("Ellos", 0xFF4AA3FF, 0),
+        )
+        return s.copy(burakoGame = BurakoGame(teams = teams, target = target.coerceAtLeast(1)))
+    }
+
+    fun burakoEnsureExists(s: AppState): AppState =
+        if (s.burakoGame != null) s else burakoStart(s)
+
+    fun burakoSetTarget(s: AppState, target: Int): AppState {
+        val g = s.burakoGame ?: return s
+        return s.copy(burakoGame = g.copy(target = target.coerceAtLeast(1)))
+    }
+
+    /** Adds this round's points to a team (never below 0). Reaching the target wins. */
+    fun burakoAdd(s: AppState, index: Int, delta: Int): AppState {
+        val g = s.burakoGame ?: return s
+        val updated = g.copy(teams = g.teams.mapIndexed { i, t -> if (i == index) t.copy(score = (t.score + delta).coerceAtLeast(0)) else t })
+        return checkBurakoEnd(s.copy(burakoGame = updated))
+    }
+
+    private fun checkBurakoEnd(s: AppState): AppState {
+        val g = s.burakoGame ?: return s
+        if (g.finished) return s
+        if (g.teams.none { it.score >= g.target }) return s
+        val best = g.teams.maxByOrNull { it.score }
+        val winners = g.teams.filter { it.score == best?.score }
+        val wNames = winners.map { it.name }
+        val lines = g.teams.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
+        val summary = "Burako · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(burakoGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.BURAKO, "Burako", wNames, lines, summary))
+    }
+
+    fun burakoFinish(s: AppState): AppState {
+        val g = s.burakoGame ?: return s
+        val best = g.teams.maxByOrNull { it.score }
+        val winners = g.teams.filter { it.score == best?.score }
+        val wNames = winners.map { it.name }
+        val lines = g.teams.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
+        val summary = "Burako · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(burakoGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.BURAKO, "Burako", wNames, lines, summary))
+    }
+
+    fun burakoReset(s: AppState): AppState {
+        val g = s.burakoGame ?: return s
+        return s.copy(burakoGame = g.copy(finished = false, teams = g.teams.map { it.copy(score = 0) }))
+    }
+
+    // ---------- Darts 501 ----------
+
+    private val dartsPalette = listOf(0xFFEB5757, 0xFF4AA3FF)
+    private val dartsNames = listOf("Jugador 1", "Jugador 2")
+
+    fun dartsStart(s: AppState, startScore: Int = 501): AppState {
+        val start = startScore.coerceAtLeast(2)
+        val players = (0 until 2).map { i -> DartsPlayer(name = dartsNames[i], color = dartsPalette[i], remaining = start) }
+        return s.copy(dartsGame = DartsGame(players = players, startScore = start))
+    }
+
+    fun dartsEnsureExists(s: AppState): AppState =
+        if (s.dartsGame != null) s else dartsStart(s)
+
+    fun dartsSetStart(s: AppState, startScore: Int): AppState {
+        val g = s.dartsGame ?: return s
+        val start = startScore.coerceAtLeast(2)
+        return s.copy(dartsGame = g.copy(startScore = start, finished = false, players = g.players.map { it.copy(remaining = start) }))
+    }
+
+    fun dartsSetColor(s: AppState, index: Int, color: Long): AppState {
+        val g = s.dartsGame ?: return s
+        return s.copy(dartsGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index) p.copy(color = color) else p }))
+    }
+
+    /**
+     * Registers a turn score (0..180). Standard bust rules: if it would leave a negative
+     * remainder or exactly 1, the turn is a bust and nothing changes. Reaching exactly 0 wins.
+     */
+    fun dartsThrow(s: AppState, index: Int, turn: Int): AppState {
+        val g = s.dartsGame ?: return s
+        val p = g.players.getOrNull(index) ?: return s
+        val next = p.remaining - turn.coerceIn(0, 180)
+        if (next < 0 || next == 1) return s   // bust: no change
+        val updated = g.copy(players = g.players.mapIndexed { i, pl -> if (i == index) pl.copy(remaining = next) else pl })
+        return if (next == 0) {
+            val winner = updated.players[index]
+            val lines = updated.players.map { ResultLine(it.name, it.remaining.toString(), it.color, it == winner) }
+            val summary = "Dardos ${g.startScore} · ${winner.name}"
+            val entry = HistoryEntry(newId("h"), GameType.DARTS, emptyList(), updated.players.map { it.name }, listOf(winner.name), summary, System.currentTimeMillis())
+            s.copy(dartsGame = updated.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.DARTS, "Dardos", listOf(winner.name), lines, summary))
+        } else {
+            s.copy(dartsGame = updated)
+        }
+    }
+
+    fun dartsFinish(s: AppState): AppState {
+        val g = s.dartsGame ?: return s
+        // closest to zero (lowest remaining) wins
+        val best = g.players.minByOrNull { it.remaining }
+        val winners = g.players.filter { it.remaining == best?.remaining }
+        val wNames = winners.map { it.name }
+        val lines = g.players.map { ResultLine(it.name, it.remaining.toString(), it.color, it in winners) }
+        val summary = "Dardos ${g.startScore} · " + wNames.joinToString("/")
+        val entry = HistoryEntry(newId("h"), GameType.DARTS, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        return s.copy(dartsGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.DARTS, "Dardos", wNames, lines, summary))
+    }
+
+    fun dartsReset(s: AppState): AppState {
+        val g = s.dartsGame ?: return s
+        return s.copy(dartsGame = g.copy(finished = false, players = g.players.map { it.copy(remaining = g.startScore) }))
     }
 
     // ---------- Settings ----------

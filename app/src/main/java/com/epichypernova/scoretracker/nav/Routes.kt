@@ -14,6 +14,12 @@ object Routes {
     const val MAGIC = "magic"
     const val YUGIOH = "yugioh"
     const val POKEMON = "pokemon"
+    const val DIGIMON = "digimon"
+    const val LORCANA = "lorcana"
+    const val ONEPIECE = "onepiece"
+    const val CHINCHON = "chinchon"
+    const val BURAKO = "burako"
+    const val DARTS = "darts"
     const val EDIT_PLAYER = "edit_player/{userId}"
 
     fun genericSetup(gameType: String) = "generic_setup/$gameType"

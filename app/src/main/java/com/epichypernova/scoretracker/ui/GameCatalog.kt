@@ -27,7 +27,12 @@ object GameCatalog {
         GameEntry(GameType.MAGIC, "M", Palette.GameMagic, R.string.game_magic_title, R.string.game_magic_sub),
         GameEntry(GameType.POKEMON, "P", Palette.GamePokemon, R.string.game_pokemon_title, R.string.game_pokemon_sub),
         GameEntry(GameType.YUGIOH, "Y", Palette.GameYugioh, R.string.game_yugioh_title, R.string.game_yugioh_sub),
-        GameEntry(GameType.DIGIMON, "D", Palette.GameDigimon, R.string.game_digimon_title, R.string.game_digimon_sub, available = false),
+        GameEntry(GameType.DIGIMON, "D", Palette.GameDigimon, R.string.game_digimon_title, R.string.game_digimon_sub),
+        GameEntry(GameType.LORCANA, "L", Palette.GameLorcana, R.string.game_lorcana_title, R.string.game_lorcana_sub),
+        GameEntry(GameType.ONEPIECE, "OP", Palette.GameOnePiece, R.string.game_onepiece_title, R.string.game_onepiece_sub),
+        GameEntry(GameType.CHINCHON, "CH", Palette.GameChinchon, R.string.game_chinchon_title, R.string.game_chinchon_sub),
+        GameEntry(GameType.BURAKO, "BK", Palette.GameBurako, R.string.game_burako_title, R.string.game_burako_sub),
+        GameEntry(GameType.DARTS, "🎯", Palette.GameDarts, R.string.game_darts_title, R.string.game_darts_sub),
     )
 
     fun tintFor(type: GameType): Color = when (type) {
@@ -35,6 +40,11 @@ object GameCatalog {
         GameType.POKEMON -> Palette.GamePokemon
         GameType.YUGIOH -> Palette.GameYugioh
         GameType.DIGIMON -> Palette.GameDigimon
+        GameType.LORCANA -> Palette.GameLorcana
+        GameType.ONEPIECE -> Palette.GameOnePiece
+        GameType.CHINCHON -> Palette.GameChinchon
+        GameType.BURAKO -> Palette.GameBurako
+        GameType.DARTS -> Palette.GameDarts
         else -> Palette.GameGeneric
     }
 
@@ -44,6 +54,11 @@ object GameCatalog {
         GameType.POKEMON -> "P"
         GameType.YUGIOH -> "Y"
         GameType.DIGIMON -> "D"
+        GameType.LORCANA -> "L"
+        GameType.ONEPIECE -> "OP"
+        GameType.CHINCHON -> "CH"
+        GameType.BURAKO -> "BK"
+        GameType.DARTS -> "🎯"
         GameType.CONTADOR_SIMPLE -> "±"
         GameType.MANOS_Y_PUNTOS -> "♠"
     }
@@ -57,5 +72,10 @@ object GameCatalog {
         GameType.POKEMON -> R.string.game_pokemon_title
         GameType.YUGIOH -> R.string.game_yugioh_title
         GameType.DIGIMON -> R.string.game_digimon_title
+        GameType.LORCANA -> R.string.game_lorcana_title
+        GameType.ONEPIECE -> R.string.game_onepiece_title
+        GameType.CHINCHON -> R.string.game_chinchon_title
+        GameType.BURAKO -> R.string.game_burako_title
+        GameType.DARTS -> R.string.game_darts_title
     }
 }

@@ -15,14 +15,14 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.epichypernova.scoretracker"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.epichypernova.scoretracker"
+        applicationId = "epic.score.tracker"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.0.1"
         resourceConfigurations += listOf("es", "en")
         vectorDrawables { useSupportLibrary = true }
     }
@@ -87,6 +87,10 @@ dependencies {
 
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Image loading + SVG decoding (for optional per-game logos in assets/logos/*.svg)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-svg:2.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Ads (Google AdMob)

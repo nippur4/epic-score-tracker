@@ -45,6 +45,16 @@
     <string name="game_yugioh_sub">Life points 8000</string>
     <string name="game_digimon_title">Digimon TCG</string>
     <string name="game_digimon_sub">Memory, security</string>
+    <string name="game_lorcana_title">Disney Lorcana</string>
+    <string name="game_lorcana_sub">Lore to 20</string>
+    <string name="game_onepiece_title">One Piece Card Game</string>
+    <string name="game_onepiece_sub">Life, DON!!</string>
+    <string name="game_chinchon_title">Chinchón</string>
+    <string name="game_chinchon_sub">Lowest wins · to 100</string>
+    <string name="game_burako_title">Burako</string>
+    <string name="game_burako_sub">Melds · to 2000</string>
+    <string name="game_darts_title">Darts 501</string>
+    <string name="game_darts_sub">Count down to 0</string>
     <string name="game_magic_short">Magic</string>
 
     <!-- Generic setup -->
@@ -67,7 +77,6 @@
     <string name="start_game">Start game</string>
     <string name="add_player_chip">＋ Add</string>
     <string name="add_player_title">Add player</string>
-    <string name="no_more_players">No more players. Create one from the Players tab.</string>
 
     <!-- Generic table -->
     <string name="table_meta">Hand %1$d · to %2$d · %3$s wins</string>
@@ -89,11 +98,9 @@
     <string name="no_current_game">No game in progress</string>
     <string name="leader_note">%1$s is leading with %2$d · the game ends when someone reaches %3$d</string>
     <string name="bid_pedia">said %1$d</string>
-    <string name="bet_points_hint">bid / points</string>
     <string name="save_hand">Save points</string>
 
     <!-- Truco -->
-    <string name="truco_meta_prefix">To 30 · matches </string>
     <string name="truco_us">Us</string>
     <string name="truco_them">Them</string>
     <string name="truco_buenas">Good</string>
@@ -103,8 +110,6 @@
     <string name="truco_new_match">New match</string>
 
     <!-- Magic -->
-    <string name="magic_lives">Life %1$d</string>
-    <string name="magic_commander_lives">Commander · %1$d</string>
     <string name="magic_reset">⟳ Reset</string>
     <string name="magic_shuffle">⚄ Random</string>
     <string name="magic_eliminated">ELIMINATED</string>
@@ -116,17 +121,12 @@
     <string name="truco_to_15">To 15</string>
     <string name="truco_to_30">To 30</string>
     <string name="start">Start</string>
-    <string name="magic_mode_commander">Commander</string>
-    <string name="magic_mode_1v1">1 vs 1</string>
 
     <!-- Yu-Gi-Oh -->
-    <string name="yugioh_lp">LP %1$d</string>
-    <string name="yugioh_reset">⟳ Reset</string>
     <string name="yugioh_coin">⊚ Coin</string>
     <string name="yugioh_eliminated">DEFEATED</string>
     <string name="yugioh_starting_lp">Starting Life Points</string>
     <string name="yugioh_players">Duelists</string>
-    <string name="yugioh_step">Damage step</string>
     <string name="yugioh_calc_title">%1$s · LP</string>
     <string name="yugioh_damage">− Damage</string>
     <string name="yugioh_heal">+ Heal</string>
@@ -140,16 +140,50 @@
     <!-- Pokémon TCG -->
     <string name="pokemon_prizes">Prizes</string>
     <string name="pokemon_damage">Damage</string>
-    <string name="pokemon_reset">⟳ Reset</string>
     <string name="pokemon_coin">⊚ Coin</string>
-    <string name="pokemon_won">WINNER!</string>
     <string name="pokemon_players">Players</string>
     <string name="pokemon_starting_prizes">Starting prizes</string>
-    <string name="pokemon_step">Damage step</string>
     <string name="pokemon_flipping">Flipping…</string>
     <string name="pokemon_heads">Heads</string>
     <string name="pokemon_tails">Tails</string>
     <string name="pokemon_starts">%1$s starts</string>
+
+    <!-- Digimon TCG -->
+    <string name="digimon_security">Security</string>
+    <string name="digimon_memory">Memory</string>
+    <string name="digimon_reset">⟳ Reset</string>
+    <string name="digimon_defeated">DEFEATED</string>
+    <string name="digimon_starting_security">Starting security</string>
+    <string name="digimon_finish">End duel</string>
+
+    <!-- Lorcana -->
+    <string name="lorcana_lore">Lore</string>
+    <string name="lorcana_won">WINNER!</string>
+    <string name="lorcana_reset">⟳ Reset</string>
+    <string name="lorcana_players">Players</string>
+    <string name="lorcana_target">Lore to win</string>
+
+    <!-- One Piece -->
+    <string name="onepiece_life">Life</string>
+    <string name="onepiece_don">DON!!</string>
+    <string name="onepiece_reset">⟳ Reset</string>
+    <string name="onepiece_defeated">DEFEATED</string>
+    <string name="onepiece_starting_life">Starting life</string>
+    <string name="onepiece_finish">End duel</string>
+
+    <!-- Chinchón / Burako / Darts (shared) -->
+    <string name="score_add">Add points</string>
+    <string name="score_add_short">＋ Add</string>
+    <string name="score_reset">⟳ Reset</string>
+    <string name="score_players">Players</string>
+    <string name="score_target">Target</string>
+    <string name="chinchon_corte">Cut −10</string>
+    <string name="chinchon_win">★ Chinchón</string>
+    <string name="chinchon_add_title">Round points</string>
+    <string name="burako_add_title">Round points</string>
+    <string name="darts_throw">Throw</string>
+    <string name="darts_throw_title">Throw score</string>
+    <string name="darts_start">Starting score</string>
 
     <!-- Players -->
     <string name="players_saved_here">Saved on this phone</string>
@@ -165,7 +199,6 @@
     <string name="magic_pick_color_title">Player color</string>
     <string name="magic_pick_color_sub">Pick a color to identify this player</string>
     <string name="avatar">Avatar</string>
-    <string name="unlock">Unlock</string>
     <string name="unlock_avatars_title">Unlock avatars</string>
     <string name="unlock_avatars_sub">Watch ads to unlock each one</string>
     <string name="unlock_watch_button">Watch ad</string>
@@ -178,7 +211,6 @@
     <string name="create_and_add">Create and add</string>
     <string name="or_create_new">Or create a new one</string>
     <string name="config_name_label">Configuration name</string>
-    <string name="ad_not_available">Ad not available, try again</string>
     <string name="favorite">Frequent player</string>
     <string name="favorite_sub">Shows first when building a game</string>
     <string name="delete_player">Delete player</string>

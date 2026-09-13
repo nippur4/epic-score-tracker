@@ -145,7 +145,7 @@ private fun LockedAvatarRow(number: Int, progress: Int, required: Int, onWatch: 
                     modifier = Modifier.fillMaxSize().clip(CircleShape).alpha(0.35f),
                 )
             }
-            Text("🔒", style = TextStyle(fontSize = 16.sp))
+            com.epichypernova.scoretracker.ui.components.LockIcon(Palette.TextPrimary, 18)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {

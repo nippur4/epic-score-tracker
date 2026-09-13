@@ -44,7 +44,6 @@ import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.GameEntry
 import com.epichypernova.scoretracker.ui.components.CircleIconButton
-import com.epichypernova.scoretracker.ui.components.GlyphBox
 import com.epichypernova.scoretracker.ui.components.dashedBorder
 import com.epichypernova.scoretracker.ui.theme.Cinzel
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -191,7 +190,7 @@ private fun SpecificTile(entry: GameEntry, title: String, onClick: () -> Unit) {
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        GlyphBox(entry.glyph, entry.tint, boxSize = 36, radius = 11, glyphSize = 16)
+        com.epichypernova.scoretracker.ui.components.GameLogoBox(entry.gameType, entry.tint, boxSize = 36, radius = 11, emblemSize = 20)
         Text(
             title,
             color = if (entry.available) Palette.TextPrimary else Palette.TextMuted,

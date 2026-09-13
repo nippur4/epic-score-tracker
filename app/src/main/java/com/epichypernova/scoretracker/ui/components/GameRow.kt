@@ -38,6 +38,7 @@ fun GameRow(
     trailing: String = "›",
     favorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -47,7 +48,7 @@ fun GameRow(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        GlyphBox(glyph = glyph, tint = tint, boxSize = 42, radius = 13, glyphSize = 18)
+        if (leading != null) leading() else GlyphBox(glyph = glyph, tint = tint, boxSize = 42, radius = 13, glyphSize = 18)
         androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(

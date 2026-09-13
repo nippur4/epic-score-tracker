@@ -119,15 +119,15 @@ fun EndGameScreen(
         }
 
         Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (muted) "🔇" else "🔊",
+            androidx.compose.foundation.layout.Box(
                 modifier = Modifier.width(48.dp).padding(end = 8.dp).clickable {
                     muted = !muted
                     runCatching { if (muted) player?.pause() else player?.start() }
                 },
-                textAlign = TextAlign.Center,
-                style = TextStyle(fontSize = 22.sp),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                com.epichypernova.scoretracker.ui.components.SpeakerIcon(Palette.TextPrimary, 22, waves = 2, muted = muted)
+            }
             ChamferCta(text = stringResource(R.string.back_to_menu), onClick = onDone, modifier = Modifier.weight(1f))
         }
     }

@@ -46,6 +46,7 @@ import com.epichypernova.scoretracker.data.model.SavedConfig
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.components.AppTab
 import com.epichypernova.scoretracker.ui.components.CircleIconButton
+import com.epichypernova.scoretracker.ui.components.GameLogoBox
 import com.epichypernova.scoretracker.ui.components.GameRow
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.TabScaffold
@@ -110,6 +111,7 @@ fun MenuScreen(
                             onClick = { launch(e.gameType) },
                             favorite = true,
                             onToggleFavorite = { onToggleFavorite(e.gameType) },
+                            leading = if (e.gameType.isGeneric) null else ({ GameLogoBox(e.gameType, e.tint) }),
                         )
                     }
                 }
@@ -158,6 +160,7 @@ fun MenuScreen(
                         enabled = e.available,
                         favorite = e.gameType in state.favoriteGames,
                         onToggleFavorite = if (e.available) ({ onToggleFavorite(e.gameType) }) else null,
+                        leading = { GameLogoBox(e.gameType, e.tint) },
                     )
                 }
             }

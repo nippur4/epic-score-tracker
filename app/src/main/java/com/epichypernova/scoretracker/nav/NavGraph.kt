@@ -65,6 +65,12 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                         GameType.MAGIC -> navController.navigate(Routes.MAGIC)
                         GameType.YUGIOH -> navController.navigate(Routes.YUGIOH)
                         GameType.POKEMON -> navController.navigate(Routes.POKEMON)
+                        GameType.DIGIMON -> navController.navigate(Routes.DIGIMON)
+                        GameType.LORCANA -> navController.navigate(Routes.LORCANA)
+                        GameType.ONEPIECE -> navController.navigate(Routes.ONEPIECE)
+                        GameType.CHINCHON -> navController.navigate(Routes.CHINCHON)
+                        GameType.BURAKO -> navController.navigate(Routes.BURAKO)
+                        GameType.DARTS -> navController.navigate(Routes.DARTS)
                         else -> Unit
                     }
                 },
@@ -163,6 +169,48 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
 
         composable(Routes.POKEMON) {
             com.epichypernova.scoretracker.ui.screens.pokemon.PokemonScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.DIGIMON) {
+            com.epichypernova.scoretracker.ui.screens.digimon.DigimonScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.LORCANA) {
+            com.epichypernova.scoretracker.ui.screens.lorcana.LorcanaScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.ONEPIECE) {
+            com.epichypernova.scoretracker.ui.screens.onepiece.OnePieceScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.CHINCHON) {
+            com.epichypernova.scoretracker.ui.screens.chinchon.ChinchonScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.BURAKO) {
+            com.epichypernova.scoretracker.ui.screens.burako.BurakoScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.DARTS) {
+            com.epichypernova.scoretracker.ui.screens.darts.DartsScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
             )

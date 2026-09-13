@@ -66,7 +66,7 @@ fun SettingsScreen(
 
             SectionLabel(stringResource(R.string.sound), modifier = Modifier.padding(top = 18.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("🔈", style = TextStyle(fontSize = 18.sp))
+                com.epichypernova.scoretracker.ui.components.SpeakerIcon(Palette.TextPrimary, 18, waves = 1)
                 Slider(
                     value = state.settings.soundVolume,
                     onValueChange = { v -> repo.update { AppActions.setSoundVolume(it, v) } },
@@ -78,7 +78,7 @@ fun SettingsScreen(
                     ),
                     modifier = Modifier.weight(1f),
                 )
-                Text("🔊", style = TextStyle(fontSize = 18.sp))
+                com.epichypernova.scoretracker.ui.components.SpeakerIcon(Palette.TextPrimary, 18, waves = 2)
             }
 
             Text(
