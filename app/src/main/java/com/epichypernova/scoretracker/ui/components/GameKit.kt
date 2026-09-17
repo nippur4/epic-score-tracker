@@ -3,19 +3,26 @@ package com.epichypernova.scoretracker.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +48,19 @@ import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 
 /** Shared building blocks for the specific-game screens (pills, chips, sheet buttons, name dialog). */
+
+/**
+ * Keeps a game board clear of the status bar, the camera cutout and the system navigation
+ * bar / gesture area. Apply after the background so the backdrop still paints edge to edge.
+ */
+@Composable
+fun Modifier.gameInsets(): Modifier = windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+
+/** Single-tint vector icon from `res/drawable` (the per-game symbols live there as `ic_*`). */
+@Composable
+fun GameIcon(@DrawableRes id: Int, tint: Color, size: Int = 16, modifier: Modifier = Modifier) {
+    Icon(painter = painterResource(id), contentDescription = null, tint = tint, modifier = modifier.size(size.dp))
+}
 
 /** Three-stop gradient from a player color into the deep app background, for pane/card backdrops. */
 fun gamePaneGradient(base: Color, start: Float = 0.42f): List<Color> {
@@ -69,13 +90,14 @@ fun MiniStep(symbol: String, size: Int = 26, onClick: () -> Unit) {
     }
 }
 
-/** Labelled counter pill: LABEL  [−] value [+]. */
+/** Labelled counter pill: [icon] LABEL  [−] value [+]. */
 @Composable
-fun LabeledCounter(label: String, value: Int, color: Color, onDec: () -> Unit, onInc: () -> Unit, big: Boolean = false) {
+fun LabeledCounter(label: String, value: Int, color: Color, onDec: () -> Unit, onInc: () -> Unit, big: Boolean = false, @DrawableRes icon: Int? = null) {
     Row(
         Modifier.height(if (big) 46.dp else 38.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (big) 10.dp else 6.dp),
     ) {
+        if (icon != null) GameIcon(icon, color, if (big) 18 else 14)
         Text(label.uppercase(), color = color, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = if (big) 11.sp else 10.sp, letterSpacing = 1.2.sp))
         MiniStep("−", if (big) 32 else 24, onDec)
         Text("$value", color = Palette.TextPrimary, modifier = Modifier.widthIn(min = if (big) 34.dp else 22.dp), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = if (big) 20.sp else 15.sp, fontFeatureSettings = "tnum"))
@@ -89,8 +111,12 @@ fun SheetLabel(text: String) {
 }
 
 @Composable
-fun SheetPrimaryButton(text: String, accent: Color = Palette.Cyan, onClick: () -> Unit) {
-    Box(Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(999.dp)).background(accent).clickable { onClick() }, contentAlignment = Alignment.Center) {
+fun SheetPrimaryButton(text: String, accent: Color = Palette.Cyan, @DrawableRes icon: Int? = null, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(999.dp)).background(accent).clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+    ) {
+        if (icon != null) GameIcon(icon, Palette.OnAccent, 18)
         Text(text, color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
     }
 }

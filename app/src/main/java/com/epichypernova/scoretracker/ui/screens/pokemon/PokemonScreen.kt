@@ -54,6 +54,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.PokemonPlayer
 import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -109,7 +110,7 @@ fun PokemonScreen(
     }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             when (players.size) {
                 2 -> {
                     PokemonPane(players[0], 0, game.startingPrizes, game.damageStep, repo, rotated = true, wide = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())

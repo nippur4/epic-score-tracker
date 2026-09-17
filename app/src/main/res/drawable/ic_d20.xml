@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Initiative / d20: icosahedron silhouette (hex outline, front face, spokes). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M12,2 L20.66,7 L20.66,17 L12,22 L3.34,17 L3.34,7 Z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M5.8,8.6 L18.2,8.6 L12,19 Z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M12,2 L5.8,8.6 M12,2 L18.2,8.6 M3.34,7 L5.8,8.6 M20.66,7 L18.2,8.6 M3.34,17 L5.8,8.6 M3.34,17 L12,19 M20.66,17 L18.2,8.6 M20.66,17 L12,19" />
+</vector>

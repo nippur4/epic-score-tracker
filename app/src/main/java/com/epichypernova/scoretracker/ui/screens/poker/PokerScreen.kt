@@ -39,7 +39,11 @@ import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
+import com.epichypernova.scoretracker.data.model.GameType
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.components.LabeledCounter
 import com.epichypernova.scoretracker.ui.components.PresetChips
 import com.epichypernova.scoretracker.ui.components.SheetLabel
@@ -56,8 +60,21 @@ private val ACCENT get() = Palette.GamePoker
 
 @Composable
 fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.pokerEnsureExists(it) } }
-    val game = state.pokerGame ?: return
+    val game = state.pokerGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        var minutes by remember { mutableIntStateOf(15) }
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.POKER,
+            minPlayers = 2, maxPlayers = 30, defaultCount = 8, onBack = onBack, countOnly = true,
+            options = {
+                SheetLabel(stringResource(R.string.poker_minutes))
+                PresetChips(listOf(10, 15, 20, 30), minutes, ACCENT) { minutes = it }
+            },
+            onStart = { players -> repo.update { AppActions.pokerStart(it, minutes, players.size) } },
+        )
+        return
+    }
     val level = game.levels[game.level.coerceIn(0, game.levels.size - 1)]
     val next = game.levels.getOrNull(game.level + 1)
     var showConfig by remember { mutableStateOf(false) }
@@ -80,18 +97,23 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val mm = remaining / 60_000; val ss = (remaining / 1000) % 60
     val urgent = game.running && remaining < 60_000
 
-    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
             Modifier.fillMaxWidth().border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            GameIcon(R.drawable.ic_clock, ACCENT, 16)
             Text("${stringResource(R.string.poker_level)} ${game.level + 1}/${game.levels.size}", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
             GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.pokerReset(it) } }
             GamePill("⚙") { showConfig = true }
         }
 
         Column(Modifier.weight(1f).fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(stringResource(R.string.poker_blinds), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 2.sp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                GameIcon(R.drawable.ic_chip, ACCENT, 16)
+                Text(stringResource(R.string.poker_blinds), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 2.sp))
+                GameIcon(R.drawable.ic_chip, ACCENT, 16)
+            }
             Text("${level.small} / ${level.big}", color = ACCENT, style = TextStyle(fontFamily = Cinzel, fontWeight = FontWeight.Black, fontSize = 40.sp))
             Text(
                 String.format("%02d:%02d", mm, ss),
@@ -115,7 +137,7 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
                 RoundBtn("⏭") { repo.update { AppActions.pokerSetLevel(it, game.level + 1, System.currentTimeMillis()) } }
             }
             Box(Modifier.padding(top = 26.dp)) {
-                LabeledCounter(stringResource(R.string.poker_players_left), game.playersLeft, Palette.Cyan, big = true,
+                LabeledCounter(stringResource(R.string.poker_players_left), game.playersLeft, Palette.Cyan, big = true, icon = R.drawable.ic_chip,
                     onDec = { repo.update { AppActions.pokerPlayersLeft(it, -1) } }, onInc = { repo.update { AppActions.pokerPlayersLeft(it, +1) } })
             }
         }
@@ -125,6 +147,7 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ConfigSheet(
             minutes = game.levelMinutes,
             onApply = { m -> repo.update { AppActions.pokerSetMinutes(it, m, System.currentTimeMillis()) } },
+            onNew = { repo.update { AppActions.pokerNew(it) } },
             onFinish = { repo.update { AppActions.pokerFinish(it) } },
             onClose = { showConfig = false },
         )
@@ -140,7 +163,7 @@ private fun RoundBtn(symbol: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(minutes: Int, onApply: (Int) -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
+private fun ConfigSheet(minutes: Int, onApply: (Int) -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     var m by remember { mutableIntStateOf(minutes) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
@@ -148,6 +171,7 @@ private fun ConfigSheet(minutes: Int, onApply: (Int) -> Unit, onFinish: () -> Un
             SheetLabel(stringResource(R.string.poker_minutes))
             PresetChips(listOf(10, 15, 20, 30), m, ACCENT) { m = it }
             SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(m); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }

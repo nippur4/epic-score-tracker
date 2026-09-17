@@ -21,7 +21,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,16 +39,19 @@ import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.UnoPlayer
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.MiniStep
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.PresetChips
-import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -58,19 +60,33 @@ private val ACCENT get() = Palette.GameUno
 
 @Composable
 fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.unoEnsureExists(it) } }
-    val game = state.unoGame ?: return
+    val game = state.unoGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        var target by remember { mutableIntStateOf(500) }
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.UNO,
+            minPlayers = 2, maxPlayers = 8, defaultCount = 4, onBack = onBack,
+            options = {
+                SheetLabel(stringResource(R.string.score_target))
+                PresetChips(listOf(200, 300, 500), target, ACCENT) { target = it }
+            },
+            onStart = { players -> repo.update { AppActions.unoStart(it, players, target) } },
+        )
+        return
+    }
     val players = game.players
 
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
     var showRound by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
             Modifier.fillMaxWidth().border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            GameIcon(R.drawable.ic_card, ACCENT, 16)
             Text(
                 "${stringResource(R.string.uno_rounds).uppercase()} ${game.rounds} · ${stringResource(R.string.score_target).uppercase()} ${game.target}",
                 color = Palette.TextMuted, modifier = Modifier.weight(1f), maxLines = 1,
@@ -88,7 +104,7 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             }
         }
         Box(Modifier.fillMaxWidth().padding(12.dp)) {
-            SheetPrimaryButton(stringResource(R.string.uno_end_round), ACCENT) { showRound = true }
+            SheetPrimaryButton(stringResource(R.string.uno_end_round), ACCENT, icon = R.drawable.ic_card) { showRound = true }
         }
     }
 
@@ -100,8 +116,9 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     }
     if (showConfig) {
         ConfigSheet(
-            count = players.size, target = game.target,
-            onApply = { n, t -> repo.update { AppActions.unoConfigure(it, n, t) } },
+            target = game.target,
+            onApply = { t -> repo.update { AppActions.unoSetTarget(it, t) } },
+            onNew = { repo.update { AppActions.unoNew(it) } },
             onFinish = { repo.update { AppActions.unoFinish(it) } },
             onClose = { showConfig = false },
         )
@@ -116,7 +133,7 @@ private fun PlayerCard(p: UnoPlayer, target: Int, leader: Boolean, onRename: () 
     Column(Modifier.fillMaxWidth().clip(shape).background(Color(0x0DFFFFFF)).border(1.dp, tint.copy(alpha = if (leader) 0.8f else 0.25f), shape).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) { PlayerNameRow(p.name, tint, onClick = onRename) }
-            if (leader) Text("★", color = ACCENT, style = TextStyle(fontSize = 14.sp))
+            if (leader) GameIcon(R.drawable.ic_star, ACCENT, 16)
             MiniStep("−", 26, onDec)
             Text("${p.score}", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, fontFeatureSettings = "tnum"))
             MiniStep("+", 26, onInc)
@@ -168,10 +185,12 @@ private fun RoundSheet(players: List<UnoPlayer>, onApply: (Int, Int) -> Unit, on
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x2FFF6FA8)).clickable { currentHand = currentHand + 20 }, contentAlignment = Alignment.Center) {
+                    Row(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x2FFF6FA8)).clickable { currentHand = currentHand + 20 }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+                        GameIcon(R.drawable.ic_skip, Color(0xFFFF6FA8), 18)
                         Text(stringResource(R.string.uno_action), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 13.sp))
                     }
-                    Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x2FA18AF5)).clickable { currentHand = currentHand + 50 }, contentAlignment = Alignment.Center) {
+                    Row(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x2FA18AF5)).clickable { currentHand = currentHand + 50 }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+                        GameIcon(R.drawable.ic_wild, Color(0xFFA18AF5), 18)
                         Text(stringResource(R.string.uno_wild), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 13.sp))
                     }
                     Box(Modifier.height(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FFFFFF)).clickable { currentHand = currentHand.dropLast(1) }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
@@ -195,17 +214,15 @@ private fun RoundSheet(players: List<UnoPlayer>, onApply: (Int, Int) -> Unit, on
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(count: Int, target: Int, onApply: (Int, Int) -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
-    var c by remember { mutableIntStateOf(count) }
+private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     var t by remember { mutableIntStateOf(target) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SheetLabel(stringResource(R.string.score_players))
-            Segmented(options = (2..8).map { "$it" }, selectedIndex = (c - 2).coerceIn(0, 6), onSelect = { c = it + 2 })
             SheetLabel(stringResource(R.string.score_target))
             PresetChips(listOf(200, 300, 500), t, ACCENT) { t = it }
-            SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(c, t); onClose() }
+            SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(t); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }

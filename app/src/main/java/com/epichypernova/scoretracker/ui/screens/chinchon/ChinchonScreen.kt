@@ -20,7 +20,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,8 +44,16 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.ChinchonPlayer
+import com.epichypernova.scoretracker.data.model.GameType
+import com.epichypernova.scoretracker.ui.components.GameEmblem
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
-import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.PresetChips
+import com.epichypernova.scoretracker.ui.components.SheetLabel
+import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
+import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -59,8 +66,21 @@ private fun paneGradient(base: Color): List<Color> {
 
 @Composable
 fun ChinchonScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.chinchonEnsureExists(it) } }
-    val game = state.chinchonGame ?: return
+    val game = state.chinchonGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        var target by remember { mutableIntStateOf(100) }
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.CHINCHON,
+            minPlayers = 2, maxPlayers = 4, defaultCount = 2, onBack = onBack,
+            options = {
+                SheetLabel(stringResource(R.string.score_target))
+                PresetChips(listOf(50, 100, 150), target, Palette.Cyan) { target = it }
+            },
+            onStart = { players -> repo.update { AppActions.chinchonStart(it, players, target) } },
+        )
+        return
+    }
     val players = game.players
 
     var showConfig by remember { mutableStateOf(false) }
@@ -71,7 +91,7 @@ fun ChinchonScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             when (players.size) {
                 2 -> {
                     Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -114,9 +134,9 @@ fun ChinchonScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     }
     if (showConfig) {
         ConfigSheet(
-            count = players.size,
             target = game.target,
-            onApply = { c, t -> repo.update { AppActions.chinchonConfigure(it, c, t) } },
+            onApply = { t -> repo.update { AppActions.chinchonSetTarget(it, t) } },
+            onNew = { repo.update { AppActions.chinchonNew(it) } },
             onFinish = { repo.update { AppActions.chinchonFinish(it) } },
             onClose = { showConfig = false },
         )
@@ -144,19 +164,22 @@ private fun Pane(player: ChinchonPlayer, index: Int, target: Int, repo: Reposito
                 contentAlignment = Alignment.Center,
             ) { Text(stringResource(R.string.score_add_short), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp)) }
             Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(stringResource(R.string.chinchon_corte)) { repo.update { AppActions.chinchonAdd(it, index, -10) } }
-                Chip(stringResource(R.string.chinchon_win)) { repo.update { AppActions.chinchonInstantWin(it, index) } }
+                Chip(stringResource(R.string.chinchon_corte), icon = { GameIcon(R.drawable.ic_scissors, Palette.TextSecondary, 14) }) { repo.update { AppActions.chinchonAdd(it, index, -10) } }
+                Chip(stringResource(R.string.chinchon_win), icon = { GameEmblem(GameType.CHINCHON, Palette.GameChinchon, 16) }) { repo.update { AppActions.chinchonInstantWin(it, index) } }
             }
         }
     }
 }
 
 @Composable
-private fun Chip(text: String, onClick: () -> Unit) {
-    Box(
+private fun Chip(text: String, icon: @Composable () -> Unit, onClick: () -> Unit) {
+    Row(
         Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onClick() }.padding(horizontal = 12.dp, vertical = 7.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)) }
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        icon()
+        Text(text, color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+    }
 }
 
 @Composable
@@ -180,30 +203,16 @@ private fun Pill(text: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(count: Int, target: Int, onApply: (Int, Int) -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
-    var c by remember { mutableIntStateOf(count) }
+private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     var t by remember { mutableIntStateOf(target) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val presets = listOf(100, 150, 50)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(stringResource(R.string.score_players), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.5.sp))
-            Segmented(options = listOf("2", "3", "4"), selectedIndex = (c - 2).coerceIn(0, 2), onSelect = { c = it + 2 })
-            Text(stringResource(R.string.score_target), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.5.sp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                presets.forEach { p ->
-                    val active = p == t
-                    Box(Modifier.clip(RoundedCornerShape(999.dp)).background(if (active) Palette.Cyan else Color.Transparent).then(if (active) Modifier else Modifier.border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp))).clickable { t = p }.padding(horizontal = 18.dp, vertical = 9.dp)) {
-                        Text("$p", color = if (active) Palette.OnAccent else Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))
-                    }
-                }
-            }
-            Box(Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(999.dp)).background(Palette.Cyan).clickable { onApply(c, t); onClose() }, contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.done), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
-            }
-            Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onFinish(); onClose() }, contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.finish_game), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))
-            }
+            SheetLabel(stringResource(R.string.score_target))
+            PresetChips(listOf(50, 100, 150), t, Palette.Cyan) { t = it }
+            SheetPrimaryButton(stringResource(R.string.done)) { onApply(t); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
+            SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }
 }

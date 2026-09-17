@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Damage: eight-point burst. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12,2 L13.72,7.84 L19.07,4.93 L16.16,10.28 L22,12 L16.16,13.72 L19.07,19.07 L13.72,16.16 L12,22 L10.28,16.16 L4.93,19.07 L7.84,13.72 L2,12 L7.84,10.28 L4.93,4.93 L10.28,7.84 Z" />
+</vector>

@@ -20,7 +20,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,12 +41,16 @@ import com.epichypernova.scoretracker.data.BowlingScoring
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.BowlingPlayer
+import com.epichypernova.scoretracker.data.model.GameType
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -56,8 +59,16 @@ private val ACCENT get() = Palette.GameBowling
 
 @Composable
 fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.bowlingEnsureExists(it) } }
-    val game = state.bowlingGame ?: return
+    val game = state.bowlingGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.BOWLING,
+            minPlayers = 1, maxPlayers = 8, defaultCount = 2, onBack = onBack,
+            onStart = { players -> repo.update { AppActions.bowlingStart(it, players) } },
+        )
+        return
+    }
     val players = game.players
     val current = players.getOrNull(game.turn)
     val standing = current?.let { BowlingScoring.pinsStanding(it.rolls) } ?: 0
@@ -66,11 +77,12 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
             Modifier.fillMaxWidth().border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            GameIcon(R.drawable.ic_pin, Color(current?.color ?: 0xFFFFFFFF), 16)
             Text(
                 if (current != null && !game.finished) stringResource(R.string.bowling_turn, current.name) + " · ${stringResource(R.string.bowling_frame)} ${frameNo.coerceAtMost(10)}" else "—",
                 color = Color(current?.color ?: 0xFFFFFFFF), modifier = Modifier.weight(1f), maxLines = 1,
@@ -89,7 +101,10 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
 
         // pin pad
         Column(Modifier.fillMaxWidth().background(Color(0xFF0E1B33)).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SheetLabel(stringResource(R.string.bowling_pins))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                GameIcon(R.drawable.ic_pin, ACCENT, 14)
+                SheetLabel(stringResource(R.string.bowling_pins))
+            }
             listOf(0..5, 6..10).forEach { range ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     range.forEach { n ->
@@ -122,6 +137,7 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ConfigSheet(
             onAdd = { repo.update { AppActions.bowlingAddPlayer(it) } },
             onReset = { repo.update { AppActions.bowlingReset(it) } },
+            onNew = { repo.update { AppActions.bowlingNew(it) } },
             onFinish = { repo.update { AppActions.bowlingFinish(it) } },
             onClose = { showConfig = false },
         )
@@ -179,12 +195,13 @@ private fun PlayerCard(p: BowlingPlayer, active: Boolean, onRename: () -> Unit) 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(onAdd: () -> Unit, onReset: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
+private fun ConfigSheet(onAdd: () -> Unit, onReset: () -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SheetPrimaryButton(stringResource(R.string.player_add), ACCENT) { onAdd(); onClose() }
             SheetSecondaryButton(stringResource(R.string.score_reset)) { onReset(); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }

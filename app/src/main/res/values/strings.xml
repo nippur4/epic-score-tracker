@@ -232,6 +232,58 @@
     <string name="dnd_rolling">Tirando…</string>
     <string name="dnd_crit">¡Crítico!</string>
     <string name="dnd_fumble">¡Pifia!</string>
+    <!-- D&D character sheet -->
+    <string name="dnd_mode_combat">Combate</string>
+    <string name="dnd_mode_sheet">Ficha</string>
+    <string name="dnd_open_sheet">Ver ficha</string>
+    <string name="dnd_class">Clase</string>
+    <string name="dnd_race">Raza</string>
+    <string name="dnd_level">Nivel</string>
+    <string name="dnd_prof">Competencia</string>
+    <string name="dnd_speed">Velocidad</string>
+    <string name="dnd_passive">Percepción pasiva</string>
+    <string name="dnd_init_bonus">Iniciativa</string>
+    <string name="dnd_abilities">Características</string>
+    <string name="dnd_save">Salv.</string>
+    <string name="dnd_ab_str">FUE</string>
+    <string name="dnd_ab_dex">DES</string>
+    <string name="dnd_ab_con">CON</string>
+    <string name="dnd_ab_int">INT</string>
+    <string name="dnd_ab_wis">SAB</string>
+    <string name="dnd_ab_cha">CAR</string>
+    <string name="dnd_skills">Pericias</string>
+    <string name="dnd_skills_hint">Tocá el círculo: competente · experto (×2)</string>
+    <string name="dnd_sk_acrobatics">Acrobacias</string>
+    <string name="dnd_sk_animal_handling">Trato con animales</string>
+    <string name="dnd_sk_arcana">Arcanos</string>
+    <string name="dnd_sk_athletics">Atletismo</string>
+    <string name="dnd_sk_deception">Engaño</string>
+    <string name="dnd_sk_history">Historia</string>
+    <string name="dnd_sk_insight">Perspicacia</string>
+    <string name="dnd_sk_intimidation">Intimidación</string>
+    <string name="dnd_sk_investigation">Investigación</string>
+    <string name="dnd_sk_medicine">Medicina</string>
+    <string name="dnd_sk_nature">Naturaleza</string>
+    <string name="dnd_sk_perception">Percepción</string>
+    <string name="dnd_sk_performance">Interpretación</string>
+    <string name="dnd_sk_persuasion">Persuasión</string>
+    <string name="dnd_sk_religion">Religión</string>
+    <string name="dnd_sk_sleight_of_hand">Juego de manos</string>
+    <string name="dnd_sk_stealth">Sigilo</string>
+    <string name="dnd_sk_survival">Supervivencia</string>
+    <string name="dnd_attacks">Ataques y acciones</string>
+    <string name="dnd_attack_add">＋ Ataque</string>
+    <string name="dnd_attack_title">Ataque</string>
+    <string name="dnd_attack_bonus">Bono de ataque</string>
+    <string name="dnd_attack_damage">Daño (ej. 1d8+3)</string>
+    <string name="dnd_attack_remove">Quitar</string>
+    <string name="dnd_slots">Espacios de conjuro</string>
+    <string name="dnd_slots_hint">Tocá un círculo para gastar o recuperar</string>
+    <string name="dnd_slot_level">Nivel %1$d</string>
+    <string name="dnd_features">Rasgos y habilidades</string>
+    <string name="dnd_features_hint">Rasgos de clase, dotes, habilidades especiales…</string>
+    <string name="dnd_notes">Notas y equipo</string>
+    <string name="dnd_notes_hint">Equipo, historia, contactos…</string>
 
     <!-- Generala / Bowling / Uno / Warhammer / Poker / SWU / Escoba / Mus -->
     <string name="player_add">＋ Jugador</string>
@@ -287,7 +339,19 @@
     <string name="mus_ordago">Órdago</string>
     <string name="mus_add">Sumar piedras</string>
     <string name="mus_juegos_per_vaca">Juegos por vaca</string>
+    <string name="mus_vacas_to_win">Vacas para ganar</string>
     <string name="mus_undo">↶ Deshacer</string>
+
+    <!-- Player setup (specific games) -->
+    <string name="setup_player_count">Cantidad de jugadores</string>
+    <string name="setup_player_range">Entre %1$d y %2$d</string>
+    <string name="setup_guest">Invitado</string>
+    <string name="setup_guest_name">Jugador %1$d</string>
+    <string name="setup_saved_player">Jugador guardado</string>
+    <string name="setup_change">Cambiar</string>
+    <string name="setup_pick_title">Elegir jugador</string>
+    <string name="setup_new_game">Nueva partida</string>
+    <string name="setup_new_game_sub">Cambiar jugadores o reglas</string>
 
     <!-- Players -->
     <string name="players_saved_here">Guardados en este teléfono</string>
@@ -343,6 +407,6 @@
     <string name="sound">Sonido</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
-    <string name="about_version">Epic Hypernova Score Tracker · v1.0.0</string>
+    <string name="about_version">Epic Hypernova Score Tracker · v1.2.0</string>
     <string name="about_local">Todos los datos se guardan solo en este dispositivo.</string>
 </resources>

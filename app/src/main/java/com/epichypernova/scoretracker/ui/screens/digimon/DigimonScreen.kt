@@ -51,6 +51,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.DigimonPlayer
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -84,7 +85,7 @@ fun DigimonScreen(
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             DigimonPane(players[0], 0, game.startingSecurity, repo, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
             MemoryBar(
                 memory = game.memory,

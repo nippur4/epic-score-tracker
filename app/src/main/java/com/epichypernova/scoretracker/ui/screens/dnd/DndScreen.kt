@@ -2,6 +2,7 @@
 
 package com.epichypernova.scoretracker.ui.screens.dnd
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +59,13 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.DndCharacter
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.AppToggle
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
+import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -84,8 +91,16 @@ private fun cardGradient(base: Color): List<Color> {
 
 @Composable
 fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.dndEnsureExists(it) } }
-    val game = state.dndGame ?: return
+    val game = state.dndGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.DND,
+            minPlayers = 1, maxPlayers = 8, defaultCount = 4, onBack = onBack,
+            onStart = { players -> repo.update { AppActions.dndStart(it, players) } },
+        )
+        return
+    }
     // Keep the stored index next to each character so actions target the right one even when sorted.
     val ordered = game.characters.withIndex().toList().let { list ->
         if (game.sortByInitiative) list.sortedByDescending { it.value.initiative } else list
@@ -95,36 +110,51 @@ fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var editFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
     var showRoll by remember { mutableStateOf(false) }
+    // 0 = combat tracker, 1 = character sheets; survives rotation / process death
+    var mode by rememberSaveable { mutableIntStateOf(0) }
+    var sheetFor by rememberSaveable { mutableIntStateOf(0) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
-            TopBar(
-                round = game.round,
-                onRound = { d -> repo.update { AppActions.dndRound(it, d) } },
-                onRoll = { showRoll = true },
-                onAdd = { repo.update { AppActions.dndAddCharacter(it) } },
-                onConfig = { showConfig = true },
-            )
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(ordered, key = { it.index }) { (idx, c) ->
-                    CharacterCard(
-                        c = c, index = idx, repo = repo,
-                        onEdit = { editFor = idx },
-                        onDamage = { padFor = idx to true },
-                        onHeal = { padFor = idx to false },
-                    )
+        Column(Modifier.fillMaxSize().gameInsets()) {
+            ModeBar(mode = mode, onMode = { mode = it }, onConfig = { showConfig = true })
+            if (mode == 0) {
+                TopBar(
+                    round = game.round,
+                    onRound = { d -> repo.update { AppActions.dndRound(it, d) } },
+                    onRoll = { showRoll = true },
+                    onAdd = { repo.update { AppActions.dndAddCharacter(it) } },
+                )
+                LazyColumn(
+                    Modifier.weight(1f).fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(ordered, key = { it.index }) { (idx, c) ->
+                        CharacterCard(
+                            c = c, index = idx, repo = repo,
+                            onEdit = { editFor = idx },
+                            onSheet = { sheetFor = idx; mode = 1 },
+                            onDamage = { padFor = idx to true },
+                            onHeal = { padFor = idx to false },
+                        )
+                    }
+                    item {
+                        Box(
+                            Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp))
+                                .clickable { repo.update { AppActions.dndAddCharacter(it) } },
+                            contentAlignment = Alignment.Center,
+                        ) { Text(stringResource(R.string.dnd_add), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)) }
+                    }
                 }
-                item {
-                    Box(
-                        Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp))
-                            .clickable { repo.update { AppActions.dndAddCharacter(it) } },
-                        contentAlignment = Alignment.Center,
-                    ) { Text(stringResource(R.string.dnd_add), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)) }
-                }
+            } else {
+                DndSheetSection(
+                    game = game,
+                    selected = sheetFor,
+                    onSelect = { sheetFor = it },
+                    repo = repo,
+                    onEditCharacter = { editFor = it },
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
             }
         }
         if (showRoll) D20Overlay(onClose = { showRoll = false })
@@ -160,27 +190,45 @@ fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             onToggleSort = { repo.update { AppActions.dndToggleSort(it) } },
             onLongRest = { repo.update { AppActions.dndLongRest(it) } },
             onReset = { repo.update { AppActions.dndReset(it) } },
+            onNew = { repo.update { AppActions.dndNew(it) } },
             onFinish = { repo.update { AppActions.dndFinish(it) } },
             onClose = { showConfig = false },
         )
     }
 }
 
+/** Combate / Ficha switch plus the settings pill; always visible so swapping views is one tap. */
 @Composable
-private fun TopBar(round: Int, onRound: (Int) -> Unit, onRoll: () -> Unit, onAdd: () -> Unit, onConfig: () -> Unit) {
+private fun ModeBar(mode: Int, onMode: (Int) -> Unit, onConfig: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Palette.AppBgDeep).border(1.dp, Palette.GameDnd.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Segmented(
+            options = listOf(stringResource(R.string.dnd_mode_combat), stringResource(R.string.dnd_mode_sheet)),
+            selectedIndex = mode,
+            onSelect = onMode,
+            modifier = Modifier.weight(1f),
+        )
+        Pill("⚙", filled = false, onClick = onConfig)
+    }
+}
+
+@Composable
+private fun TopBar(round: Int, onRound: (Int) -> Unit, onRoll: () -> Unit, onAdd: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(Palette.AppBgDeep).padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            GameIcon(R.drawable.ic_hourglass, Palette.TextMuted, 14)
             Text(stringResource(R.string.dnd_round), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
             SmallRound("−") { onRound(-1) }
             Text("$round", color = Palette.TextPrimary, modifier = Modifier.widthIn(min = 22.dp), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFeatureSettings = "tnum"))
             SmallRound("+") { onRound(+1) }
         }
-        Pill("d20", filled = true, onClick = onRoll)
+        Pill("d20", filled = true, onClick = onRoll, icon = R.drawable.ic_d20)
         Pill("＋", filled = false, onClick = onAdd)
-        Pill("⚙", filled = false, onClick = onConfig)
     }
 }
 
@@ -192,20 +240,22 @@ private fun SmallRound(symbol: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Pill(text: String, filled: Boolean, onClick: () -> Unit) {
-    Box(
+private fun Pill(text: String, filled: Boolean, onClick: () -> Unit, @DrawableRes icon: Int? = null) {
+    val fg = if (filled) Palette.OnAccent else Palette.TextSecondary
+    Row(
         Modifier.height(36.dp).clip(RoundedCornerShape(999.dp))
             .background(if (filled) Palette.GameDnd else Color.Transparent)
             .then(if (filled) Modifier else Modifier.border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)))
             .clickable { onClick() }.padding(horizontal = 13.dp),
-        contentAlignment = Alignment.Center,
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Text(text, color = if (filled) Palette.OnAccent else Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 12.sp))
+        if (icon != null) GameIcon(icon, fg, 16)
+        Text(text, color = fg, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 12.sp))
     }
 }
 
 @Composable
-private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit: () -> Unit, onDamage: () -> Unit, onHeal: () -> Unit) {
+private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit: () -> Unit, onSheet: () -> Unit, onDamage: () -> Unit, onHeal: () -> Unit) {
     val tint = Color(c.color)
     val down = c.hp <= 0
     val dead = down && c.deathFail >= 3
@@ -228,17 +278,22 @@ private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit:
                 Text(c.name.uppercase(), color = tint, maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.9.sp))
                 Text("✎", color = Palette.TextMuted, style = TextStyle(fontSize = 11.sp))
             }
+            // jump to this character's sheet
+            Box(Modifier.size(30.dp).clip(CircleShape).background(Color(0x14FFFFFF)).clickable { onSheet() }, contentAlignment = Alignment.Center) {
+                GameIcon(R.drawable.ic_sheet, Palette.TextSecondary, 15)
+            }
             Box(
                 Modifier.size(30.dp).clip(CircleShape).background(if (c.inspiration) INSPIRATION.copy(alpha = 0.22f) else Color(0x14FFFFFF))
                     .clickable { repo.update { AppActions.dndToggleInspiration(it, index) } },
                 contentAlignment = Alignment.Center,
-            ) { Text("★", color = if (c.inspiration) INSPIRATION else Palette.TextMuted, style = TextStyle(fontSize = 16.sp)) }
+            ) { GameIcon(R.drawable.ic_star, if (c.inspiration) INSPIRATION else Palette.TextMuted, 16) }
         }
 
-        // HP row: − [hp / max] +
+        // HP row: − ♥ [hp / max] +
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             HpButton("−", enabled = !dead) { repo.update { AppActions.dndDamage(it, index, 1) } }
             Row(Modifier.padding(horizontal = 14.dp).widthIn(min = 120.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+                GameIcon(R.drawable.ic_heart, hpColor, 18, Modifier.padding(bottom = 12.dp, end = 6.dp))
                 Text("${c.hp}", color = hpColor, maxLines = 1, softWrap = false, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 44.sp, fontFeatureSettings = "tnum"))
                 Text("/${c.maxHp}", color = Palette.TextTertiary, modifier = Modifier.padding(bottom = 8.dp, start = 4.dp), style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFeatureSettings = "tnum"))
                 if (c.tempHp > 0) {
@@ -255,13 +310,13 @@ private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit:
 
         // actions + stat chips
         FlowRow(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ActionPill(stringResource(R.string.dnd_damage), HP_LOW, enabled = !dead, onClick = onDamage)
-            ActionPill(stringResource(R.string.dnd_heal), Palette.Mint, enabled = !dead, onClick = onHeal)
-            StatChip(stringResource(R.string.dnd_temp), c.tempHp, Palette.Cyan,
+            ActionPill(stringResource(R.string.dnd_damage), HP_LOW, R.drawable.ic_sword, enabled = !dead, onClick = onDamage)
+            ActionPill(stringResource(R.string.dnd_heal), Palette.Mint, R.drawable.ic_potion, enabled = !dead, onClick = onHeal)
+            StatChip(stringResource(R.string.dnd_temp), c.tempHp, Palette.Cyan, R.drawable.ic_heart_outline,
                 onDec = { repo.update { AppActions.dndTempHp(it, index, -1) } }, onInc = { repo.update { AppActions.dndTempHp(it, index, +1) } })
-            StatChip(stringResource(R.string.dnd_ac), c.ac, Palette.TextSecondary,
+            StatChip(stringResource(R.string.dnd_ac), c.ac, Palette.TextSecondary, R.drawable.ic_shield,
                 onDec = { repo.update { AppActions.dndAc(it, index, -1) } }, onInc = { repo.update { AppActions.dndAc(it, index, +1) } })
-            StatChip(stringResource(R.string.dnd_init), c.initiative, INSPIRATION,
+            StatChip(stringResource(R.string.dnd_init), c.initiative, INSPIRATION, R.drawable.ic_d20,
                 onDec = { repo.update { AppActions.dndInitiative(it, index, -1) } }, onInc = { repo.update { AppActions.dndInitiative(it, index, +1) } })
         }
     }
@@ -286,21 +341,25 @@ private fun HpBar(hp: Int, maxHp: Int, temp: Int, tint: Color) {
 }
 
 @Composable
-private fun ActionPill(text: String, color: Color, enabled: Boolean, onClick: () -> Unit) {
-    Box(
+private fun ActionPill(text: String, color: Color, @DrawableRes icon: Int, enabled: Boolean, onClick: () -> Unit) {
+    Row(
         Modifier.height(38.dp).clip(RoundedCornerShape(999.dp)).background(color.copy(alpha = if (enabled) 0.22f else 0.08f)).border(1.dp, color.copy(alpha = if (enabled) 0.6f else 0.2f), RoundedCornerShape(999.dp))
-            .clickable(enabled = enabled) { onClick() }.padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, color = if (enabled) Palette.TextPrimary else Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 13.sp)) }
+            .clickable(enabled = enabled) { onClick() }.padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        GameIcon(icon, if (enabled) color else Palette.TextMuted, 16)
+        Text(text, color = if (enabled) Palette.TextPrimary else Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 13.sp))
+    }
 }
 
-/** Compact labelled counter with − / + buttons. */
+/** Compact labelled counter with an icon and − / + buttons. */
 @Composable
-private fun StatChip(label: String, value: Int, color: Color, onDec: () -> Unit, onInc: () -> Unit) {
+private fun StatChip(label: String, value: Int, color: Color, @DrawableRes icon: Int, onDec: () -> Unit, onInc: () -> Unit) {
     Row(
         Modifier.height(38.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        GameIcon(icon, color, 14)
         Text(label.uppercase(), color = color, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 10.sp, letterSpacing = 1.2.sp))
         Box(Modifier.size(24.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).repeatingClickable(onClick = onDec), contentAlignment = Alignment.Center) {
             Text("−", color = Palette.TextPrimary, style = TextStyle(fontSize = 16.sp))
@@ -329,7 +388,10 @@ private fun DeathSaves(c: DndCharacter, dead: Boolean, onSuccess: () -> Unit, on
         Text(stringResource(status), color = statusColor, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.8.sp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Pips("✓", c.deathSuccess, Palette.Mint, onSuccess)
-            Text(stringResource(R.string.dnd_death_saves), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 10.sp, letterSpacing = 1.sp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                GameIcon(R.drawable.ic_skull, statusColor, 14)
+                Text(stringResource(R.string.dnd_death_saves), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 10.sp, letterSpacing = 1.sp))
+            }
             Pips("✗", c.deathFail, HP_LOW, onFail)
         }
     }
@@ -419,7 +481,7 @@ private fun SheetLabel(text: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(sortByInit: Boolean, onToggleSort: () -> Unit, onLongRest: () -> Unit, onReset: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
+private fun ConfigSheet(sortByInit: Boolean, onToggleSort: () -> Unit, onLongRest: () -> Unit, onReset: () -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -432,6 +494,9 @@ private fun ConfigSheet(sortByInit: Boolean, onToggleSort: () -> Unit, onLongRes
             }
             Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onReset(); onClose() }, contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.dnd_new_encounter), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))
+            }
+            Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onNew(); onClose() }, contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.setup_new_game), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))
             }
             Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onFinish(); onClose() }, contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.finish_game), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))

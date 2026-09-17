@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Poker chip: rim with six edge notches cut out (even-odd) and an inner ring. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M12,2 A10,10 0 1,1 11.99,2 Z M12,5.2 A6.8,6.8 0 1,0 12.01,5.2 Z M13.05,4.40 L13.05,1.40 L10.95,1.40 L10.95,4.40 Z M19.11,9.11 L21.70,7.61 L20.65,5.79 L18.06,7.29 Z M18.06,16.71 L20.65,18.21 L21.70,16.39 L19.11,14.89 Z M10.95,19.60 L10.95,22.60 L13.05,22.60 L13.05,19.60 Z M4.89,14.89 L2.30,16.39 L3.35,18.21 L5.94,16.71 Z M5.94,7.29 L3.35,5.79 L2.30,7.61 L4.89,9.11 Z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.4" android:fillColor="#00000000" android:pathData="M12,8.4 A3.6,3.6 0 1,1 11.99,8.4 Z" />
+</vector>

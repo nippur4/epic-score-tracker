@@ -55,6 +55,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.OnePiecePlayer
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
 import com.epichypernova.scoretracker.ui.theme.Orbitron
@@ -98,7 +99,7 @@ fun OnePieceScreen(
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             OnePiecePane(players[0], 0, game.startingLife, repo, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
             CentralBar(
                 onCoin = { showCoin = true },

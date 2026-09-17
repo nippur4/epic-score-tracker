@@ -20,7 +20,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,15 +39,18 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.EscobaPlayer
+import com.epichypernova.scoretracker.data.model.GameType
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.LabeledCounter
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.PresetChips
-import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -57,19 +59,33 @@ private val ACCENT get() = Palette.GameEscoba
 
 @Composable
 fun EscobaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.escobaEnsureExists(it) } }
-    val game = state.escobaGame ?: return
+    val game = state.escobaGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        var target by remember { mutableIntStateOf(15) }
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.ESCOBA,
+            minPlayers = 2, maxPlayers = 4, defaultCount = 2, onBack = onBack,
+            options = {
+                SheetLabel(stringResource(R.string.score_target))
+                PresetChips(listOf(15, 21, 30), target, ACCENT) { target = it }
+            },
+            onStart = { players -> repo.update { AppActions.escobaStart(it, players, target) } },
+        )
+        return
+    }
     val players = game.players
 
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
     var showRound by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
             Modifier.fillMaxWidth().border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            GameIcon(R.drawable.ic_oro, ACCENT, 16)
             Text("${stringResource(R.string.score_target).uppercase()} ${game.target}", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
             GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.escobaReset(it) } }
             GamePill("⚙") { showConfig = true }
@@ -81,7 +97,7 @@ fun EscobaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             }
         }
         Box(Modifier.fillMaxWidth().padding(12.dp)) {
-            SheetPrimaryButton(stringResource(R.string.escoba_close), ACCENT) { showRound = true }
+            SheetPrimaryButton(stringResource(R.string.escoba_close), ACCENT, icon = R.drawable.ic_cards) { showRound = true }
         }
     }
 
@@ -92,8 +108,9 @@ fun EscobaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         RoundSheet(players = players, onApply = { c, o, v, s -> repo.update { AppActions.escobaRound(it, c, o, v, s) } }, onClose = { showRound = false })
     }
     if (showConfig) {
-        ConfigSheet(count = players.size, target = game.target,
-            onApply = { n, t -> repo.update { AppActions.escobaConfigure(it, n, t) } },
+        ConfigSheet(target = game.target,
+            onApply = { t -> repo.update { AppActions.escobaSetTarget(it, t) } },
+            onNew = { repo.update { AppActions.escobaNew(it) } },
             onFinish = { repo.update { AppActions.escobaFinish(it) } },
             onClose = { showConfig = false })
     }
@@ -109,7 +126,7 @@ private fun PlayerCard(p: EscobaPlayer, leader: Boolean, onRename: () -> Unit, o
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             PlayerNameRow(p.name, tint, onClick = onRename)
-            LabeledCounter(stringResource(R.string.escoba_escobas), p.escobas, ACCENT, onDec = onDec, onInc = onInc)
+            LabeledCounter(stringResource(R.string.escoba_escobas), p.escobas, ACCENT, onDec = onDec, onInc = onInc, icon = R.drawable.ic_broom)
         }
         Text("${p.score}", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 34.sp, fontFeatureSettings = "tnum"))
     }
@@ -127,10 +144,10 @@ private fun RoundSheet(players: List<EscobaPlayer>, onApply: (Int, Int, Int, Int
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SheetLabel(stringResource(R.string.escoba_hand_title))
-            PickRow(stringResource(R.string.escoba_cartas), players, cartas) { cartas = it }
-            PickRow(stringResource(R.string.escoba_oros), players, oros) { oros = it }
-            PickRow(stringResource(R.string.escoba_velo), players, velo) { velo = it }
-            PickRow(stringResource(R.string.escoba_setenta), players, setenta) { setenta = it }
+            PickRow(stringResource(R.string.escoba_cartas), players, cartas, icon = { GameIcon(R.drawable.ic_cards, Palette.TextSecondary, 16) }) { cartas = it }
+            PickRow(stringResource(R.string.escoba_oros), players, oros, icon = { GameIcon(R.drawable.ic_oro, ACCENT, 16) }) { oros = it }
+            PickRow(stringResource(R.string.escoba_velo), players, velo, icon = { OroBadge("7") }) { velo = it }
+            PickRow(stringResource(R.string.escoba_setenta), players, setenta, icon = { OroBadge("70") }) { setenta = it }
             Text(
                 players.joinToString(" · ") { p -> "${p.name} +${listOf(cartas, oros, velo, setenta).count { it == players.indexOf(p) } + p.escobas}" },
                 color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
@@ -140,10 +157,22 @@ private fun RoundSheet(players: List<EscobaPlayer>, onApply: (Int, Int, Int, Int
     }
 }
 
+/** Gold-coin glyph with a number on it (7 de velo, setenta). */
 @Composable
-private fun PickRow(label: String, players: List<EscobaPlayer>, selected: Int, onSelect: (Int) -> Unit) {
+private fun OroBadge(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        GameIcon(R.drawable.ic_oro, ACCENT, 16)
+        Text(text, color = ACCENT, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 11.sp))
+    }
+}
+
+@Composable
+private fun PickRow(label: String, players: List<EscobaPlayer>, selected: Int, icon: @Composable () -> Unit, onSelect: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 13.sp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            icon()
+            Text(label, color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 13.sp))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             (listOf(-1) + players.indices).forEach { i ->
                 val active = i == selected
@@ -164,17 +193,15 @@ private fun PickRow(label: String, players: List<EscobaPlayer>, selected: Int, o
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(count: Int, target: Int, onApply: (Int, Int) -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
-    var c by remember { mutableIntStateOf(count) }
+private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     var t by remember { mutableIntStateOf(target) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SheetLabel(stringResource(R.string.score_players))
-            Segmented(options = listOf("2", "3", "4"), selectedIndex = (c - 2).coerceIn(0, 2), onSelect = { c = it + 2 })
             SheetLabel(stringResource(R.string.score_target))
             PresetChips(listOf(15, 21, 30), t, ACCENT) { t = it }
-            SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(c, t); onClose() }
+            SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(t); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }

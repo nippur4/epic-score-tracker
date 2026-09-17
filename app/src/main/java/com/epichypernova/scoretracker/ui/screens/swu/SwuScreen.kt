@@ -44,7 +44,9 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.SwuPlayer
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.PresetChips
@@ -68,12 +70,13 @@ fun SwuScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var damageFor by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             Pane(game.players[0], 0, repo, hasInitiative = game.initiative == 0, rotated = true, onDamage = { damageFor = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
             Row(
                 Modifier.fillMaxWidth().background(Palette.AppBgDeep).border(1.dp, ACCENT.copy(alpha = 0.35f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                GameIcon(R.drawable.ic_shield, ACCENT, 16)
                 Text("${stringResource(R.string.swu_base_hp).uppercase()} ${game.startingHp}", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
                 GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.swuReset(it) } }
                 GamePill("⚙") { showConfig = true }
@@ -126,16 +129,22 @@ private fun Pane(p: SwuPlayer, index: Int, repo: Repository, hasInitiative: Bool
                     HpButton("＋") { repo.update { AppActions.swuHp(it, index, +1) } }
                 }
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.height(40.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x38EB5757)).border(1.dp, Color(0x99EB5757), RoundedCornerShape(999.dp)).clickable { onDamage() }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
+                    Row(
+                        Modifier.height(40.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x38EB5757)).border(1.dp, Color(0x99EB5757), RoundedCornerShape(999.dp)).clickable { onDamage() }.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        GameIcon(R.drawable.ic_burst, Color(0xFFEB5757), 16)
                         Text(stringResource(R.string.dnd_damage), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 13.sp))
                     }
-                    Box(
+                    val initFg = if (hasInitiative) Palette.OnAccent else Palette.TextSecondary
+                    Row(
                         Modifier.height(40.dp).clip(RoundedCornerShape(999.dp)).background(if (hasInitiative) ACCENT else Color(0x17FFFFFF))
                             .then(if (hasInitiative) Modifier else Modifier.border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)))
-                            .clickable { repo.update { AppActions.swuInitiative(it, index) } }.padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center,
+                            .clickable { repo.update { AppActions.swuInitiative(it, index) } }.padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
-                        Text("✦ " + stringResource(R.string.swu_initiative), color = if (hasInitiative) Palette.OnAccent else Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.2.sp))
+                        GameIcon(R.drawable.ic_bolt, initFg, 16)
+                        Text(stringResource(R.string.swu_initiative), color = initFg, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.2.sp))
                     }
                 }
             }

@@ -45,6 +45,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.BurakoTeam
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -66,7 +67,7 @@ fun BurakoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var addForIndex by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             TeamPane(teams[0], game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
             CentralBar(game.target, onReset = { repo.update { AppActions.burakoReset(it) } }, onConfig = { showConfig = true })
             TeamPane(teams[1], game.target, repo, rotated = false, onAdd = { addForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())

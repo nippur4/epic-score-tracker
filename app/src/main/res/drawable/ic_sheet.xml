@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Character sheet: a page with a folded corner and three text lines cut out (even-odd). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M5,2 H14 V8.5 H20 V22 H5 Z M8,11.5 H17 V13 H8 Z M8,15 H17 V16.5 H8 Z M8,18.5 H13.5 V20 H8 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M15.5,2.4 L20,6.9 H15.5 Z" />
+</vector>

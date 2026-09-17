@@ -21,8 +21,8 @@ android {
         applicationId = "epic.score.tracker"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.0"
         resourceConfigurations += listOf("es", "en")
         vectorDrawables { useSupportLibrary = true }
     }

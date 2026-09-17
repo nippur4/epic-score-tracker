@@ -54,6 +54,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.YuGiOhPlayer
 import com.epichypernova.scoretracker.ui.components.Segmented
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -111,7 +112,7 @@ fun YuGiOhScreen(
     }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             when (players.size) {
                 2 -> {
                     YuGiOhPane(players[0], 0, game.step, repo, rotated = true, wide = true, onPickColor = { colorForIndex = 0 }, onOpenCalc = { calcForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())

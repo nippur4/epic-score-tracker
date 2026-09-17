@@ -21,7 +21,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,12 +40,16 @@ import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.GeneralaCat
+import com.epichypernova.scoretracker.ui.components.DieFace
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -63,13 +66,30 @@ private fun catLabel(cat: GeneralaCat): String = when (cat) {
     GeneralaCat.POKER -> stringResource(R.string.generala_cat_poker)
     GeneralaCat.GENERALA -> stringResource(R.string.generala_cat_generala)
     GeneralaCat.DOBLE -> stringResource(R.string.generala_cat_doble)
-    else -> "⚀⚁⚂⚃⚄⚅"[cat.ordinal].toString() + "  ×${cat.face}"
+    else -> "×${cat.face}"
+}
+
+/** Row label: a real die face for the number categories, text for the combinations. */
+@Composable
+private fun CatLabel(cat: GeneralaCat, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (cat.isNumber) DieFace(cat.face, Palette.TextPrimary, Palette.AppBgDeep, size = 20)
+        Text(catLabel(cat), color = Palette.TextSecondary, maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 12.sp))
+    }
 }
 
 @Composable
 fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
-    LaunchedEffect(Unit) { repo.update { AppActions.generalaEnsureExists(it) } }
-    val game = state.generalaGame ?: return
+    val game = state.generalaGame
+    // Finished games go back through setup, except while the winner screen is on its way.
+    if (game == null || (game.finished && state.pendingResult == null)) {
+        PlayerSetupScreen(
+            repo = repo, state = state, gameType = GameType.GENERALA,
+            minPlayers = 1, maxPlayers = 12, defaultCount = 2, onBack = onBack,
+            onStart = { players -> repo.update { AppActions.generalaStart(it, players) } },
+        )
+        return
+    }
     val players = game.players
     val turn = AppActions.generalaTurn(game)
 
@@ -77,7 +97,7 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
+    Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         // top bar
         Row(
             Modifier.fillMaxWidth().border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
@@ -117,7 +137,7 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
                     Modifier.height(ROW_H).then(if (sectionStart) Modifier.padding(top = 6.dp) else Modifier).background(Color(0x0DFFFFFF), RoundedCornerShape(8.dp)),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(catLabel(cat), color = Palette.TextSecondary, modifier = Modifier.width(CAT_W).padding(start = 8.dp), maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 12.sp))
+                    CatLabel(cat, Modifier.width(CAT_W).padding(start = 8.dp))
                     players.forEachIndexed { i, p ->
                         val v = p.scores[cat]
                         Box(
@@ -163,7 +183,12 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         )
     }
     if (showConfig) {
-        ConfigSheet(onAdd = { repo.update { AppActions.generalaAddPlayer(it) } }, onFinish = { repo.update { AppActions.generalaFinish(it) } }, onClose = { showConfig = false })
+        ConfigSheet(
+            onAdd = { repo.update { AppActions.generalaAddPlayer(it) } },
+            onNew = { repo.update { AppActions.generalaNew(it) } },
+            onFinish = { repo.update { AppActions.generalaFinish(it) } },
+            onClose = { showConfig = false },
+        )
     }
 }
 
@@ -173,15 +198,20 @@ private fun CellSheet(playerName: String, cat: GeneralaCat, current: Int?, onPic
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("$playerName · ${catLabel(cat)}", color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 16.sp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (cat.isNumber) DieFace(cat.face, Palette.TextPrimary, Palette.SheetSurface, size = 22)
+                Text("$playerName · ${catLabel(cat)}", color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 16.sp))
+            }
             if (cat.isNumber) {
                 SheetLabel(stringResource(R.string.generala_dice))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..5).forEach { n ->
                         val v = n * cat.face
-                        Box(Modifier.weight(1f).height(56.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FFFFFF)).clickable { onPick(v, false); onClose() }, contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("$n", color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp))
+                        Box(Modifier.weight(1f).height(60.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FFFFFF)).clickable { onPick(v, false); onClose() }, contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    repeat(n) { DieFace(cat.face, Palette.TextTertiary, Color(0xFF1C2A4A), size = 9) }
+                                }
                                 Text("$v", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 18.sp))
                             }
                         }
@@ -212,11 +242,12 @@ private fun CellSheet(playerName: String, cat: GeneralaCat, current: Int?, onPic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConfigSheet(onAdd: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
+private fun ConfigSheet(onAdd: () -> Unit, onNew: () -> Unit, onFinish: () -> Unit, onClose: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SheetPrimaryButton(stringResource(R.string.player_add), ACCENT) { onAdd(); onClose() }
+            SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }
     }

@@ -40,7 +40,9 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.WarhammerPlayer
+import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.LabeledCounter
 import com.epichypernova.scoretracker.ui.components.MiniStep
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
@@ -62,17 +64,19 @@ fun WarhammerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var showConfig by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             Pane(game.players[0], 0, repo, rotated = true, modifier = Modifier.weight(1f).fillMaxWidth())
             Row(
                 Modifier.fillMaxWidth().background(Palette.AppBgDeep).border(1.dp, ACCENT.copy(alpha = 0.35f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    GameIcon(R.drawable.ic_hourglass, if (game.round >= 5) ACCENT else Palette.TextMuted, 14)
                     Text(stringResource(R.string.wh_round), color = Palette.TextMuted, maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 10.sp, letterSpacing = 1.2.sp))
                     MiniStep("−") { repo.update { AppActions.warhammerRound(it, -1) } }
                     Text("${game.round}/5", color = Palette.TextPrimary, modifier = Modifier.widthIn(min = 30.dp), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFeatureSettings = "tnum"))
-                    MiniStep("+") { repo.update { AppActions.warhammerRound(it, +1) } }
+                    // On round 5 the + closes the battle and shows the winner.
+                    MiniStep(if (game.round >= 5) "✓" else "+") { repo.update { AppActions.warhammerRound(it, +1) } }
                 }
                 GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.warhammerReset(it) } }
                 GamePill("⚙") { showConfig = true }
@@ -101,11 +105,11 @@ private fun Pane(p: WarhammerPlayer, index: Int, repo: Repository, rotated: Bool
                 Text("VP", color = Palette.TextTertiary, modifier = Modifier.padding(bottom = 12.dp), style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 1.5.sp))
             }
             Column(Modifier.padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                LabeledCounter(stringResource(R.string.wh_primary), p.primary, Palette.Cyan, big = true,
+                LabeledCounter(stringResource(R.string.wh_primary), p.primary, Palette.Cyan, big = true, icon = R.drawable.ic_reticle,
                     onDec = { repo.update { AppActions.warhammerPrimary(it, index, -1) } }, onInc = { repo.update { AppActions.warhammerPrimary(it, index, +1) } })
-                LabeledCounter(stringResource(R.string.wh_secondary), p.secondary, Palette.Mint, big = true,
+                LabeledCounter(stringResource(R.string.wh_secondary), p.secondary, Palette.Mint, big = true, icon = R.drawable.ic_banner,
                     onDec = { repo.update { AppActions.warhammerSecondary(it, index, -1) } }, onInc = { repo.update { AppActions.warhammerSecondary(it, index, +1) } })
-                LabeledCounter(stringResource(R.string.wh_cp), p.cp, CP_COLOR, big = true,
+                LabeledCounter(stringResource(R.string.wh_cp), p.cp, CP_COLOR, big = true, icon = R.drawable.ic_skull,
                     onDec = { repo.update { AppActions.warhammerCp(it, index, -1) } }, onInc = { repo.update { AppActions.warhammerCp(it, index, +1) } })
             }
         }

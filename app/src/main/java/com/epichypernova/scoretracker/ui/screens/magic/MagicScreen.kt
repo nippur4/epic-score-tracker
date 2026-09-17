@@ -54,6 +54,7 @@ import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.MagicPlayer
 import com.epichypernova.scoretracker.ui.components.DieFace
+import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.EnergyIcon
 import com.epichypernova.scoretracker.ui.components.ExperienceIcon
 import com.epichypernova.scoretracker.ui.components.PoisonIcon
@@ -113,7 +114,7 @@ fun MagicScreen(
     }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().gameInsets()) {
             when (players.size) {
                 2 -> {
                     MagicPane(players[0], 0, repo, game.commander, rotated = true, wide = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())

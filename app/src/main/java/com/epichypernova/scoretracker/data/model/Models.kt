@@ -41,6 +41,17 @@ data class User(
     val avatarId: Int? = null, // 1..30 → drawable avatar_N; null = colored initial
 )
 
+/**
+ * A participant picked on a specific game's setup screen: an app [User] (carries its id so the
+ * finished game lands in that user's stats) or a guest with just a name and color.
+ */
+@Serializable
+data class GamePlayer(
+    val name: String,
+    val color: Long,
+    val userId: String? = null,
+)
+
 /** Rules for a generic (hands & points) game. */
 @Serializable
 data class GenericRules(
@@ -238,6 +249,7 @@ data class ChinchonPlayer(
     val name: String,
     val color: Long,
     val score: Int = 0,
+    val userId: String? = null,
 )
 
 @Serializable
@@ -270,6 +282,7 @@ data class DartsPlayer(
     val name: String,
     val color: Long,
     val remaining: Int = 501,
+    val userId: String? = null,
 )
 
 @Serializable
@@ -279,20 +292,56 @@ data class DartsGame(
     val finished: Boolean = false,
 )
 
-// ---- Dungeons & Dragons (party stat tracker) ----
+// ---- Dungeons & Dragons (party stat tracker + character sheets) ----
+
+@Serializable
+enum class DndAbility { STR, DEX, CON, INT, WIS, CHA }
+
+/** The 18 skills, each tied to the ability its check uses. */
+@Serializable
+enum class DndSkill(val ability: DndAbility) {
+    ACROBATICS(DndAbility.DEX), ANIMAL_HANDLING(DndAbility.WIS), ARCANA(DndAbility.INT), ATHLETICS(DndAbility.STR),
+    DECEPTION(DndAbility.CHA), HISTORY(DndAbility.INT), INSIGHT(DndAbility.WIS), INTIMIDATION(DndAbility.CHA),
+    INVESTIGATION(DndAbility.INT), MEDICINE(DndAbility.WIS), NATURE(DndAbility.INT), PERCEPTION(DndAbility.WIS),
+    PERFORMANCE(DndAbility.CHA), PERSUASION(DndAbility.CHA), RELIGION(DndAbility.INT), SLEIGHT_OF_HAND(DndAbility.DEX),
+    STEALTH(DndAbility.DEX), SURVIVAL(DndAbility.WIS),
+}
+
+/** One attack / action line on the sheet: "Espada larga · +5 · 1d8+3 cortante". */
+@Serializable
+data class DndAttack(
+    val name: String,
+    val bonus: Int = 0,          // to-hit bonus
+    val damage: String = "",     // free text, e.g. "1d8+3"
+)
 
 @Serializable
 data class DndCharacter(
     val name: String,
     val color: Long,
+    // --- combat tracker ---
     val hp: Int = 20,
     val maxHp: Int = 20,
     val tempHp: Int = 0,          // temporary HP; absorbed before real HP
     val ac: Int = 10,             // armor class
-    val initiative: Int = 0,
+    val initiative: Int = 0,      // rolled initiative for the current encounter
     val deathSuccess: Int = 0,    // 0..3, only meaningful while hp == 0
     val deathFail: Int = 0,       // 0..3; reaching 3 = dead
     val inspiration: Boolean = false,
+    val userId: String? = null,   // app user playing this character, if any
+    // --- character sheet ---
+    val dndClass: String = "",
+    val race: String = "",
+    val level: Int = 1,           // 1..20; proficiency bonus derives from it
+    val speed: Int = 30,
+    val abilities: Map<DndAbility, Int> = emptyMap(),        // score per ability; missing = 10
+    val saveProficiencies: Set<DndAbility> = emptySet(),
+    val skillProficiency: Map<DndSkill, Int> = emptyMap(),   // 1 = proficient, 2 = expertise; missing = 0
+    val attacks: List<DndAttack> = emptyList(),
+    val slotMax: List<Int> = emptyList(),                    // spell slots per level, index = level - 1
+    val slotUsed: List<Int> = emptyList(),
+    val features: String = "",    // rasgos, habilidades de clase, dotes
+    val notes: String = "",       // equipo, historia, lo que sea
 )
 
 @Serializable
@@ -319,6 +368,7 @@ data class GeneralaPlayer(
     val name: String,
     val color: Long,
     val scores: Map<GeneralaCat, Int> = emptyMap(),   // 0 = tachado
+    val userId: String? = null,
 )
 
 @Serializable
@@ -334,6 +384,7 @@ data class BowlingPlayer(
     val name: String,
     val color: Long,
     val rolls: List<Int> = emptyList(),   // pins knocked down per roll, in order
+    val userId: String? = null,
 )
 
 @Serializable
@@ -351,6 +402,7 @@ data class UnoPlayer(
     val name: String,
     val color: Long,
     val score: Int = 0,
+    val userId: String? = null,
 )
 
 @Serializable
@@ -422,6 +474,7 @@ data class EscobaPlayer(
     val color: Long,
     val score: Int = 0,
     val escobas: Int = 0,          // escobas in the current hand (added on round close)
+    val userId: String? = null,
 )
 
 @Serializable
@@ -446,6 +499,7 @@ data class MusTeam(
 data class MusGame(
     val teams: List<MusTeam>,               // always 2
     val juegosPerVaca: Int = 3,
+    val vacasToWin: Int = 1,                // first team to reach this many vacas wins the partida
     val history: List<List<MusTeam>> = emptyList(),  // snapshots for undo
     val finished: Boolean = false,
 )
