@@ -71,6 +71,15 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                         GameType.CHINCHON -> navController.navigate(Routes.CHINCHON)
                         GameType.BURAKO -> navController.navigate(Routes.BURAKO)
                         GameType.DARTS -> navController.navigate(Routes.DARTS)
+                        GameType.DND -> navController.navigate(Routes.DND)
+                        GameType.GENERALA -> navController.navigate(Routes.GENERALA)
+                        GameType.BOWLING -> navController.navigate(Routes.BOWLING)
+                        GameType.UNO -> navController.navigate(Routes.UNO)
+                        GameType.WARHAMMER -> navController.navigate(Routes.WARHAMMER)
+                        GameType.POKER -> navController.navigate(Routes.POKER)
+                        GameType.SWU -> navController.navigate(Routes.SWU)
+                        GameType.ESCOBA -> navController.navigate(Routes.ESCOBA)
+                        GameType.MUS -> navController.navigate(Routes.MUS)
                         else -> Unit
                     }
                 },
@@ -211,6 +220,69 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
 
         composable(Routes.DARTS) {
             com.epichypernova.scoretracker.ui.screens.darts.DartsScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.DND) {
+            com.epichypernova.scoretracker.ui.screens.dnd.DndScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.GENERALA) {
+            com.epichypernova.scoretracker.ui.screens.generala.GeneralaScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.BOWLING) {
+            com.epichypernova.scoretracker.ui.screens.bowling.BowlingScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.UNO) {
+            com.epichypernova.scoretracker.ui.screens.uno.UnoScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.WARHAMMER) {
+            com.epichypernova.scoretracker.ui.screens.warhammer.WarhammerScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.POKER) {
+            com.epichypernova.scoretracker.ui.screens.poker.PokerScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.SWU) {
+            com.epichypernova.scoretracker.ui.screens.swu.SwuScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.ESCOBA) {
+            com.epichypernova.scoretracker.ui.screens.escoba.EscobaScreen(
+                repo = repo, state = state,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Routes.MUS) {
+            com.epichypernova.scoretracker.ui.screens.mus.MusScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
             )

@@ -66,6 +66,15 @@ object Palette {
     val GameChinchon = Color(0xFF4FB35B)    // green
     val GameBurako = Color(0xFFF27BA9)      // rose
     val GameDarts = Color(0xFFEB5757)       // dart red
+    val GameDnd = Color(0xFFFF8C42)         // dragon-fire orange
+    val GameGenerala = Color(0xFFF2ECD0)         // ivory dice
+    val GameBowling = Color(0xFF7ED6FF)         // sky
+    val GameUno = Color(0xFFFFD34D)         // uno yellow
+    val GameWarhammer = Color(0xFF9BA8C2)         // steel
+    val GamePoker = Color(0xFF29A86B)         // felt green
+    val GameSwu = Color(0xFFB4F04B)         // lime
+    val GameEscoba = Color(0xFFD98E2B)         // copper
+    val GameMus = Color(0xFFC58B5A)         // tan
     val GameGeneric = Color(0xFF2FD3F0)     // truco / genéricos
 
     // Truco palettes

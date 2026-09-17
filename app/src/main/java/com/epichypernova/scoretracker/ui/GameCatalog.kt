@@ -33,6 +33,15 @@ object GameCatalog {
         GameEntry(GameType.CHINCHON, "CH", Palette.GameChinchon, R.string.game_chinchon_title, R.string.game_chinchon_sub),
         GameEntry(GameType.BURAKO, "BK", Palette.GameBurako, R.string.game_burako_title, R.string.game_burako_sub),
         GameEntry(GameType.DARTS, "🎯", Palette.GameDarts, R.string.game_darts_title, R.string.game_darts_sub),
+        GameEntry(GameType.DND, "🎲", Palette.GameDnd, R.string.game_dnd_title, R.string.game_dnd_sub),
+        GameEntry(GameType.GENERALA, "⚄", Palette.GameGenerala, R.string.game_generala_title, R.string.game_generala_sub),
+        GameEntry(GameType.BOWLING, "🎳", Palette.GameBowling, R.string.game_bowling_title, R.string.game_bowling_sub),
+        GameEntry(GameType.UNO, "U", Palette.GameUno, R.string.game_uno_title, R.string.game_uno_sub),
+        GameEntry(GameType.WARHAMMER, "W", Palette.GameWarhammer, R.string.game_warhammer_title, R.string.game_warhammer_sub),
+        GameEntry(GameType.POKER, "♠", Palette.GamePoker, R.string.game_poker_title, R.string.game_poker_sub),
+        GameEntry(GameType.SWU, "SW", Palette.GameSwu, R.string.game_swu_title, R.string.game_swu_sub),
+        GameEntry(GameType.ESCOBA, "15", Palette.GameEscoba, R.string.game_escoba_title, R.string.game_escoba_sub),
+        GameEntry(GameType.MUS, "♦", Palette.GameMus, R.string.game_mus_title, R.string.game_mus_sub),
     )
 
     fun tintFor(type: GameType): Color = when (type) {
@@ -45,6 +54,15 @@ object GameCatalog {
         GameType.CHINCHON -> Palette.GameChinchon
         GameType.BURAKO -> Palette.GameBurako
         GameType.DARTS -> Palette.GameDarts
+        GameType.DND -> Palette.GameDnd
+        GameType.GENERALA -> Palette.GameGenerala
+        GameType.BOWLING -> Palette.GameBowling
+        GameType.UNO -> Palette.GameUno
+        GameType.WARHAMMER -> Palette.GameWarhammer
+        GameType.POKER -> Palette.GamePoker
+        GameType.SWU -> Palette.GameSwu
+        GameType.ESCOBA -> Palette.GameEscoba
+        GameType.MUS -> Palette.GameMus
         else -> Palette.GameGeneric
     }
 
@@ -59,6 +77,15 @@ object GameCatalog {
         GameType.CHINCHON -> "CH"
         GameType.BURAKO -> "BK"
         GameType.DARTS -> "🎯"
+        GameType.DND -> "🎲"
+        GameType.GENERALA -> "⚄"
+        GameType.BOWLING -> "🎳"
+        GameType.UNO -> "U"
+        GameType.WARHAMMER -> "W"
+        GameType.POKER -> "♠"
+        GameType.SWU -> "SW"
+        GameType.ESCOBA -> "15"
+        GameType.MUS -> "♦"
         GameType.CONTADOR_SIMPLE -> "±"
         GameType.MANOS_Y_PUNTOS -> "♠"
     }
@@ -77,5 +104,14 @@ object GameCatalog {
         GameType.CHINCHON -> R.string.game_chinchon_title
         GameType.BURAKO -> R.string.game_burako_title
         GameType.DARTS -> R.string.game_darts_title
+        GameType.DND -> R.string.game_dnd_title
+        GameType.GENERALA -> R.string.game_generala_title
+        GameType.BOWLING -> R.string.game_bowling_title
+        GameType.UNO -> R.string.game_uno_title
+        GameType.WARHAMMER -> R.string.game_warhammer_title
+        GameType.POKER -> R.string.game_poker_title
+        GameType.SWU -> R.string.game_swu_title
+        GameType.ESCOBA -> R.string.game_escoba_title
+        GameType.MUS -> R.string.game_mus_title
     }
 }

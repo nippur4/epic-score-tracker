@@ -16,7 +16,16 @@ enum class GameType {
     ONEPIECE,
     CHINCHON,
     BURAKO,
-    DARTS;
+    DARTS,
+    DND,
+    GENERALA,
+    BOWLING,
+    UNO,
+    WARHAMMER,
+    POKER,
+    SWU,
+    ESCOBA,
+    MUS;
 
     val isGeneric: Boolean get() = this == MANOS_Y_PUNTOS || this == CONTADOR_SIMPLE
 }
@@ -270,6 +279,177 @@ data class DartsGame(
     val finished: Boolean = false,
 )
 
+// ---- Dungeons & Dragons (party stat tracker) ----
+
+@Serializable
+data class DndCharacter(
+    val name: String,
+    val color: Long,
+    val hp: Int = 20,
+    val maxHp: Int = 20,
+    val tempHp: Int = 0,          // temporary HP; absorbed before real HP
+    val ac: Int = 10,             // armor class
+    val initiative: Int = 0,
+    val deathSuccess: Int = 0,    // 0..3, only meaningful while hp == 0
+    val deathFail: Int = 0,       // 0..3; reaching 3 = dead
+    val inspiration: Boolean = false,
+)
+
+@Serializable
+data class DndGame(
+    val characters: List<DndCharacter>,
+    val round: Int = 1,
+    val sortByInitiative: Boolean = false,
+    val finished: Boolean = false,
+)
+
+// ---- Generala ----
+
+@Serializable
+enum class GeneralaCat(val fixed: Int, val servida: Int) {
+    UNO(0, 0), DOS(0, 0), TRES(0, 0), CUATRO(0, 0), CINCO(0, 0), SEIS(0, 0),
+    ESCALERA(20, 25), FULL(30, 35), POKER(40, 45), GENERALA(50, 50), DOBLE(100, 100);
+
+    val isNumber: Boolean get() = ordinal <= 5
+    val face: Int get() = ordinal + 1   // die face for number categories
+}
+
+@Serializable
+data class GeneralaPlayer(
+    val name: String,
+    val color: Long,
+    val scores: Map<GeneralaCat, Int> = emptyMap(),   // 0 = tachado
+)
+
+@Serializable
+data class GeneralaGame(
+    val players: List<GeneralaPlayer>,
+    val finished: Boolean = false,
+)
+
+// ---- Bowling ----
+
+@Serializable
+data class BowlingPlayer(
+    val name: String,
+    val color: Long,
+    val rolls: List<Int> = emptyList(),   // pins knocked down per roll, in order
+)
+
+@Serializable
+data class BowlingGame(
+    val players: List<BowlingPlayer>,
+    val turn: Int = 0,
+    val rollLog: List<Int> = emptyList(), // player index per roll, for undo
+    val finished: Boolean = false,
+)
+
+// ---- Uno ----
+
+@Serializable
+data class UnoPlayer(
+    val name: String,
+    val color: Long,
+    val score: Int = 0,
+)
+
+@Serializable
+data class UnoGame(
+    val players: List<UnoPlayer>,
+    val target: Int = 500,
+    val rounds: Int = 0,
+    val finished: Boolean = false,
+)
+
+// ---- Warhammer 40k ----
+
+@Serializable
+data class WarhammerPlayer(
+    val name: String,
+    val color: Long,
+    val primary: Int = 0,
+    val secondary: Int = 0,
+    val cp: Int = 0,
+)
+
+@Serializable
+data class WarhammerGame(
+    val players: List<WarhammerPlayer>,   // always 2
+    val round: Int = 1,                   // battle round 1..5
+    val finished: Boolean = false,
+)
+
+// ---- Poker (blind timer) ----
+
+@Serializable
+data class PokerLevel(val small: Int, val big: Int)
+
+@Serializable
+data class PokerGame(
+    val levels: List<PokerLevel>,
+    val level: Int = 0,
+    val levelMinutes: Int = 15,
+    val running: Boolean = false,
+    val endAt: Long = 0L,                 // wall-clock end of the current level while running
+    val remainingMs: Long = 15 * 60_000L, // remaining time while paused
+    val playersLeft: Int = 8,
+    val finished: Boolean = false,
+)
+
+// ---- Star Wars Unlimited ----
+
+@Serializable
+data class SwuPlayer(
+    val name: String,
+    val color: Long,
+    val hp: Int = 30,            // base HP remaining
+    val defeated: Boolean = false,
+)
+
+@Serializable
+data class SwuGame(
+    val players: List<SwuPlayer>,   // always 2
+    val startingHp: Int = 30,
+    val initiative: Int = 0,        // index of the player holding the initiative token
+    val finished: Boolean = false,
+)
+
+// ---- Escoba de 15 ----
+
+@Serializable
+data class EscobaPlayer(
+    val name: String,
+    val color: Long,
+    val score: Int = 0,
+    val escobas: Int = 0,          // escobas in the current hand (added on round close)
+)
+
+@Serializable
+data class EscobaGame(
+    val players: List<EscobaPlayer>,
+    val target: Int = 15,
+    val finished: Boolean = false,
+)
+
+// ---- Mus ----
+
+@Serializable
+data class MusTeam(
+    val name: String,
+    val color: Long,
+    val piedras: Int = 0,     // 0..40; 5 piedras = 1 amarrako
+    val juegos: Int = 0,
+    val vacas: Int = 0,
+)
+
+@Serializable
+data class MusGame(
+    val teams: List<MusTeam>,               // always 2
+    val juegosPerVaca: Int = 3,
+    val history: List<List<MusTeam>> = emptyList(),  // snapshots for undo
+    val finished: Boolean = false,
+)
+
 // ---- History ----
 
 @Serializable
@@ -327,6 +507,15 @@ data class AppState(
     val chinchonGame: ChinchonGame? = null,
     val burakoGame: BurakoGame? = null,
     val dartsGame: DartsGame? = null,
+    val dndGame: DndGame? = null,
+    val generalaGame: GeneralaGame? = null,
+    val bowlingGame: BowlingGame? = null,
+    val unoGame: UnoGame? = null,
+    val warhammerGame: WarhammerGame? = null,
+    val pokerGame: PokerGame? = null,
+    val swuGame: SwuGame? = null,
+    val escobaGame: EscobaGame? = null,
+    val musGame: MusGame? = null,
     val history: List<HistoryEntry> = emptyList(),
     val settings: Settings = Settings(),
     val pendingResult: GameResult? = null,

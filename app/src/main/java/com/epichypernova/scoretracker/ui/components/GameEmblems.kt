@@ -111,6 +111,15 @@ fun GameEmblem(type: GameType, tint: Color, size: Int = 24) {
             GameType.CHINCHON -> cardFan(tint)
             GameType.BURAKO -> tiles(tint)
             GameType.DARTS -> dartboard(tint)
+            GameType.DND -> d20(tint)
+            GameType.GENERALA -> dieFive(tint)
+            GameType.BOWLING -> bowlingPin(tint)
+            GameType.UNO -> unoCard(tint)
+            GameType.WARHAMMER -> warShield(tint)
+            GameType.POKER -> pokerChip(tint)
+            GameType.SWU -> starburst(tint)
+            GameType.ESCOBA -> coin(tint)
+            GameType.MUS -> amarrako(tint)
             else -> Unit
         }
     }
@@ -260,7 +269,126 @@ private fun DrawScope.dartboard(c: Color) {
     }
 }
 
-private fun DrawScope.star(center: Offset, outer: Float, inner: Float, c: Color) {
+/** Icosahedron silhouette: hexagon outline, the front triangle and spokes to the other vertices. */
+private fun DrawScope.d20(c: Color) {
+    val w = size.width; val h = size.height
+    val cx = 0.5f * w; val cy = 0.5f * h; val r = 0.42f * w
+    val sw = w * 0.055f
+    val hex = (0 until 6).map {
+        val a = (-90f + it * 60f) * PI.toFloat() / 180f
+        Offset(cx + r * cos(a), cy + r * sin(a))
+    }
+    drawPath(Path().apply {
+        moveTo(hex[0].x, hex[0].y); for (i in 1 until 6) lineTo(hex[i].x, hex[i].y); close()
+    }, c, style = Stroke(width = sw))
+    // front face: upper-left, upper-right and bottom vertices
+    drawPath(Path().apply { moveTo(hex[5].x, hex[5].y); lineTo(hex[1].x, hex[1].y); lineTo(hex[3].x, hex[3].y); close() }, c, style = Stroke(width = sw * 0.8f))
+    listOf(0 to 5, 0 to 1, 2 to 1, 2 to 3, 4 to 3, 4 to 5).forEach { (a, b) ->
+        drawLine(c, hex[a], hex[b], strokeWidth = sw * 0.7f)
+    }
+}
+
+private fun DrawScope.dieFive(c: Color) {
+    val w = size.width; val h = size.height
+    val sw = w * 0.06f
+    drawPath(Path().apply {
+        addRoundRect(RoundRect(0.14f * w, 0.14f * h, 0.86f * w, 0.86f * h, CornerRadius(0.14f * w, 0.14f * w)))
+    }, c, style = Stroke(width = sw))
+    listOf(0.32f to 0.32f, 0.68f to 0.32f, 0.5f to 0.5f, 0.32f to 0.68f, 0.68f to 0.68f).forEach { (fx, fy) ->
+        drawCircle(c, radius = 0.065f * w, center = Offset(fx * w, fy * h))
+    }
+}
+
+private fun DrawScope.bowlingPin(c: Color) {
+    val w = size.width; val h = size.height
+    val sw = w * 0.06f
+    val p = Path().apply {
+        moveTo(0.5f * w, 0.08f * h)
+        cubicTo(0.66f * w, 0.08f * h, 0.64f * w, 0.32f * h, 0.58f * w, 0.42f * h)
+        cubicTo(0.78f * w, 0.56f * h, 0.74f * w, 0.92f * h, 0.5f * w, 0.92f * h)
+        cubicTo(0.26f * w, 0.92f * h, 0.22f * w, 0.56f * h, 0.42f * w, 0.42f * h)
+        cubicTo(0.36f * w, 0.32f * h, 0.34f * w, 0.08f * h, 0.5f * w, 0.08f * h)
+        close()
+    }
+    drawPath(p, c, style = Stroke(width = sw))
+    drawLine(c, Offset(0.4f * w, 0.36f * h), Offset(0.6f * w, 0.36f * h), strokeWidth = sw, cap = StrokeCap.Round)
+}
+
+private fun DrawScope.unoCard(c: Color) {
+    val w = size.width; val h = size.height
+    val sw = w * 0.06f
+    drawPath(Path().apply {
+        addRoundRect(RoundRect(0.26f * w, 0.12f * h, 0.74f * w, 0.88f * h, CornerRadius(0.08f * w, 0.08f * w)))
+    }, c, style = Stroke(width = sw))
+    rotate(-30f, pivot = Offset(0.5f * w, 0.5f * h)) {
+        drawOval(c, topLeft = Offset(0.36f * w, 0.28f * h), size = Size(0.28f * w, 0.44f * h))
+    }
+}
+
+private fun DrawScope.warShield(c: Color) {
+    val w = size.width; val h = size.height
+    val sw = w * 0.06f
+    val p = Path().apply {
+        moveTo(0.5f * w, 0.1f * h)
+        lineTo(0.84f * w, 0.24f * h)
+        lineTo(0.78f * w, 0.62f * h)
+        lineTo(0.5f * w, 0.92f * h)
+        lineTo(0.22f * w, 0.62f * h)
+        lineTo(0.16f * w, 0.24f * h)
+        close()
+    }
+    drawPath(p, c, style = Stroke(width = sw))
+    drawLine(c, Offset(0.5f * w, 0.28f * h), Offset(0.5f * w, 0.74f * h), strokeWidth = sw, cap = StrokeCap.Round)
+    drawLine(c, Offset(0.34f * w, 0.42f * h), Offset(0.66f * w, 0.42f * h), strokeWidth = sw, cap = StrokeCap.Round)
+}
+
+private fun DrawScope.pokerChip(c: Color) {
+    val w = size.width; val h = size.height
+    val cx = 0.5f * w; val cy = 0.5f * h
+    val sw = w * 0.055f
+    drawCircle(c, radius = 0.42f * w, center = Offset(cx, cy), style = Stroke(width = sw))
+    drawCircle(c, radius = 0.24f * w, center = Offset(cx, cy), style = Stroke(width = sw * 0.8f))
+    for (k in 0 until 6) {
+        val a = (k * 60f) * PI.toFloat() / 180f
+        drawLine(c, Offset(cx + 0.28f * w * cos(a), cy + 0.28f * w * sin(a)), Offset(cx + 0.4f * w * cos(a), cy + 0.4f * w * sin(a)), strokeWidth = sw * 1.6f)
+    }
+}
+
+private fun DrawScope.starburst(c: Color) {
+    val w = size.width; val h = size.height
+    val cx = 0.5f * w; val cy = 0.5f * h
+    val p = Path()
+    for (i in 0 until 8) {
+        val r = if (i % 2 == 0) 0.44f * w else 0.14f * w
+        val a = (-90f + i * 45f) * PI.toFloat() / 180f
+        val x = cx + r * cos(a); val y = cy + r * sin(a)
+        if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
+    }
+    p.close()
+    drawPath(p, c)
+    drawCircle(Color.White.copy(alpha = 0.85f), radius = 0.06f * w, center = Offset(cx, cy))
+}
+
+private fun DrawScope.coin(c: Color) {
+    val w = size.width; val h = size.height
+    val cx = 0.5f * w; val cy = 0.5f * h
+    val sw = w * 0.06f
+    drawCircle(c, radius = 0.4f * w, center = Offset(cx, cy), style = Stroke(width = sw))
+    drawCircle(c, radius = 0.28f * w, center = Offset(cx, cy), style = Stroke(width = sw * 0.6f))
+    star(Offset(cx, cy), outer = 0.14f * w, inner = 0.06f * w, c)
+}
+
+private fun DrawScope.amarrako(c: Color) {
+    val w = size.width; val h = size.height
+    // four stones + the crossing fifth = one amarrako
+    listOf(0.24f, 0.41f, 0.59f, 0.76f).forEach { fx ->
+        drawCircle(c, radius = 0.075f * w, center = Offset(fx * w, 0.62f * h))
+    }
+    drawLine(c, Offset(0.16f * w, 0.36f * h), Offset(0.84f * w, 0.4f * h), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+}
+
+private fun DrawScope.star(
+center: Offset, outer: Float, inner: Float, c: Color) {
     val p = Path()
     for (i in 0 until 10) {
         val r = if (i % 2 == 0) outer else inner
