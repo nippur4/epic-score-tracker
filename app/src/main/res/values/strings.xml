@@ -21,6 +21,10 @@
     <string name="menu_section_saved">Personalizados</string>
     <string name="config_name_hint">Poné un nombre a la configuración</string>
     <string name="menu_section_specific">Juegos específicos</string>
+    <string name="cat_cards">Cartas</string>
+    <string name="cat_tcg">TCG</string>
+    <string name="cat_rpg">Rol y miniaturas</string>
+    <string name="cat_dice">Dados, bar y deportes</string>
     <string name="en_curso">En curso</string>
     <string name="hand_n">Mano %1$d</string>
     <string name="leading_with">%1$s va ganando con</string>

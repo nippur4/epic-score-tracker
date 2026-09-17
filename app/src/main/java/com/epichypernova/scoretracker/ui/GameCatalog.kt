@@ -16,6 +16,14 @@ data class GameEntry(
     val available: Boolean = true,
 )
 
+/** Menu grouping for the specific games. [key] is what gets persisted in the collapsed-sections set. */
+enum class GameCategory(val key: String, @StringRes val titleRes: Int) {
+    CARDS("cards", R.string.cat_cards),
+    TCG("tcg", R.string.cat_tcg),
+    RPG("rpg", R.string.cat_rpg),
+    DICE("dice", R.string.cat_dice),
+}
+
 object GameCatalog {
     val generics = listOf(
         GameEntry(GameType.MANOS_Y_PUNTOS, "♠", Palette.GameGeneric, R.string.game_manos_title, R.string.game_manos_sub),
@@ -43,6 +51,20 @@ object GameCatalog {
         GameEntry(GameType.ESCOBA, "15", Palette.GameEscoba, R.string.game_escoba_title, R.string.game_escoba_sub),
         GameEntry(GameType.MUS, "♦", Palette.GameMus, R.string.game_mus_title, R.string.game_mus_sub),
     )
+
+    private val categoryOf = mapOf(
+        GameType.TRUCO to GameCategory.CARDS, GameType.CHINCHON to GameCategory.CARDS, GameType.BURAKO to GameCategory.CARDS,
+        GameType.ESCOBA to GameCategory.CARDS, GameType.MUS to GameCategory.CARDS, GameType.UNO to GameCategory.CARDS, GameType.POKER to GameCategory.CARDS,
+        GameType.MAGIC to GameCategory.TCG, GameType.POKEMON to GameCategory.TCG, GameType.YUGIOH to GameCategory.TCG, GameType.DIGIMON to GameCategory.TCG,
+        GameType.LORCANA to GameCategory.TCG, GameType.ONEPIECE to GameCategory.TCG, GameType.SWU to GameCategory.TCG,
+        GameType.DND to GameCategory.RPG, GameType.WARHAMMER to GameCategory.RPG,
+        GameType.GENERALA to GameCategory.DICE, GameType.DARTS to GameCategory.DICE, GameType.BOWLING to GameCategory.DICE,
+    )
+
+    /** Specific games grouped by category, in menu order. Anything unmapped falls into CARDS. */
+    val byCategory: List<Pair<GameCategory, List<GameEntry>>> = GameCategory.entries.map { cat ->
+        cat to specifics.filter { (categoryOf[it.gameType] ?: GameCategory.CARDS) == cat }
+    }.filter { it.second.isNotEmpty() }
 
     fun tintFor(type: GameType): Color = when (type) {
         GameType.MAGIC -> Palette.GameMagic

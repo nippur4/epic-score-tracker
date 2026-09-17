@@ -496,6 +496,7 @@ data class AppState(
     val users: List<User> = emptyList(),
     val savedConfigs: List<SavedConfig> = emptyList(),
     val favoriteGames: Set<GameType> = emptySet(),
+    val collapsedSections: Set<String> = emptySet(),   // menu section keys the user folded
     val currentGame: CurrentGame? = null,
     val trucoMatch: TrucoMatch? = null,
     val magicGame: MagicGame? = null,

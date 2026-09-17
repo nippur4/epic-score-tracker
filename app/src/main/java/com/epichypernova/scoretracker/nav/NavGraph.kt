@@ -90,6 +90,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                     }
                 },
                 onToggleFavorite = { gt -> repo.update { AppActions.toggleFavoriteGame(it, gt) } },
+                onToggleSection = { key -> repo.update { AppActions.toggleSection(it, key) } },
                 onDeleteConfig = { id -> repo.update { AppActions.deleteConfig(it, id) } },
             )
         }

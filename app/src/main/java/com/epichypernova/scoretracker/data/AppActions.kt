@@ -1691,6 +1691,11 @@ object AppActions {
         return s.copy(musGame = g.copy(finished = false, history = emptyList(), teams = g.teams.map { it.copy(piedras = 0, juegos = 0, vacas = 0) }))
     }
 
+    // ---------- Menu ----------
+
+    fun toggleSection(s: AppState, key: String): AppState =
+        s.copy(collapsedSections = if (key in s.collapsedSections) s.collapsedSections - key else s.collapsedSections + key)
+
     // ---------- Settings ----------
 
     fun setLanguage(s: AppState, language: String): AppState =

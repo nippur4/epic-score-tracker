@@ -67,6 +67,7 @@ fun MenuScreen(
     onStartConfig: (SavedConfig) -> Unit,
     onToggleFavorite: (GameType) -> Unit,
     onDeleteConfig: (String) -> Unit,
+    onToggleSection: (String) -> Unit = {},
 ) {
     var grid by remember { mutableStateOf(false) }
     var configToDelete by remember { mutableStateOf<SavedConfig?>(null) }
@@ -122,8 +123,9 @@ fun MenuScreen(
                     }
                 }
 
-                item { SectionLabel(stringResource(R.string.menu_section_generics), modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)) }
-                items(GameCatalog.generics) { e ->
+                val genericsFolded = "generics" in state.collapsedSections
+                item { CollapsibleHeader(stringResource(R.string.menu_section_generics), genericsFolded, top = 10.dp) { onToggleSection("generics") } }
+                if (!genericsFolded) items(GameCatalog.generics) { e ->
                     GameRow(
                         e.glyph, e.tint, stringResource(e.titleRes), stringResource(e.subtitleRes),
                         onClick = { onStartGeneric(e.gameType) },
@@ -151,17 +153,22 @@ fun MenuScreen(
                     }
                 }
 
-                item { SectionLabel(stringResource(R.string.menu_section_specific), modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)) }
-                items(GameCatalog.specifics) { e ->
-                    GameRow(
-                        e.glyph, e.tint, stringResource(e.titleRes),
-                        if (e.available) stringResource(e.subtitleRes) else stringResource(R.string.coming_soon),
-                        onClick = { if (e.available) onOpenSpecific(e.gameType) },
-                        enabled = e.available,
-                        favorite = e.gameType in state.favoriteGames,
-                        onToggleFavorite = if (e.available) ({ onToggleFavorite(e.gameType) }) else null,
-                        leading = { GameLogoBox(e.gameType, e.tint) },
-                    )
+                GameCatalog.byCategory.forEach { (cat, entries) ->
+                    val folded = cat.key in state.collapsedSections
+                    item(key = "cat_" + cat.key) {
+                        CollapsibleHeader(stringResource(cat.titleRes), folded, top = 12.dp, count = entries.size) { onToggleSection(cat.key) }
+                    }
+                    if (!folded) items(entries, key = { it.gameType.name }) { e ->
+                        GameRow(
+                            e.glyph, e.tint, stringResource(e.titleRes),
+                            if (e.available) stringResource(e.subtitleRes) else stringResource(R.string.coming_soon),
+                            onClick = { if (e.available) onOpenSpecific(e.gameType) },
+                            enabled = e.available,
+                            favorite = e.gameType in state.favoriteGames,
+                            onToggleFavorite = if (e.available) ({ onToggleFavorite(e.gameType) }) else null,
+                            leading = { GameLogoBox(e.gameType, e.tint) },
+                        )
+                    }
                 }
             }
         }
@@ -173,6 +180,23 @@ fun MenuScreen(
             onConfirm = { onDeleteConfig(cfg.id); configToDelete = null },
             onDismiss = { configToDelete = null },
         )
+    }
+}
+
+/** Section label with a chevron; the whole row toggles [collapsed]. */
+@Composable
+private fun CollapsibleHeader(text: String, collapsed: Boolean, top: androidx.compose.ui.unit.Dp, count: Int? = null, onToggle: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = top, bottom = 2.dp).clip(RoundedCornerShape(10.dp)).clickable { onToggle() }.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SectionLabel(text)
+        if (count != null) {
+            Text("$count", color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 10.sp))
+        }
+        Box(Modifier.weight(1f))
+        Text(if (collapsed) "▸" else "▾", color = Palette.TextMuted, style = TextStyle(fontSize = 13.sp))
     }
 }
 

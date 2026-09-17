@@ -18,7 +18,8 @@ keystore.properties
 
 # Build artifacts at repo root
 /EpicHypernova-debug.apk
-/EpicHypernova-release.aab
+/EpicHypernova-*.aab
+/EpicScoreTracker-*.aab
 
 # OS
 .DS_Store
