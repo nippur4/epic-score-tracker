@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de privacidad · Epic Hypernova</title>
+  <meta name="description" content="Política de privacidad de la app Epic Hypernova (Android). Privacy policy for the Epic Hypernova Android app.">
+  <meta name="theme-color" content="#0A1327">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Design tokens — mirror of ui/theme/Color.kt (Palette). Single dark theme, like the app. */
+    :root {
+      color-scheme: dark;
+      --bg: #0C1730;
+      --bg-deep: #0A1327;
+      --sheet: #142547;
+      --card: rgba(255,255,255,0.045);
+      --row: rgba(255,255,255,0.035);
+      --control: rgba(255,255,255,0.07);
+      --card-border: rgba(255,255,255,0.10);
+      --row-border: rgba(255,255,255,0.07);
+      --button-border: rgba(255,255,255,0.16);
+      --divider: rgba(255,255,255,0.09);
+      --bevel: rgba(255,255,255,0.10);
+      --text: #EAF1FF;
+      --text-2: #B9C8E8;
+      --text-3: #8497BC;
+      --text-muted: #6C7EA3;
+      --text-faint: #556792;
+      --cyan: #2FD3F0;
+      --cyan-bright: #6BE4FA;
+      --cyan-deep: #14A8CC;
+      --cyan-number: #CFF6FF;
+      --magenta: #E24BD6;
+      --mint: #55E6A5;
+      --on-accent: #0B1730;
+      --cta: linear-gradient(180deg, #6BE4FA 0%, #2FD3F0 55%, #14A8CC 100%);
+      --chamfer: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+      --font-title: "Cinzel", "Times New Roman", serif;
+      --font-number: "Orbitron", "Segoe UI", sans-serif;
+      --font-body: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 480px at 50% -120px, rgba(47,211,240,0.16), transparent 70%),
+        radial-gradient(700px 420px at 100% 100%, rgba(226,75,214,0.10), transparent 70%),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.65 var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration-color: rgba(47,211,240,0.45); text-underline-offset: 3px; }
+    a:hover { color: var(--cyan-bright); }
+
+    main { max-width: 780px; margin: 0 auto; padding: 40px 16px 72px; }
+
+    /* Header — app bar look */
+    .hero {
+      background: var(--sheet);
+      border: 1px solid var(--card-border);
+      box-shadow: inset 0 1px 0 var(--bevel), 0 20px 50px rgba(0,0,0,0.35);
+      border-radius: 16px;
+      padding: 28px 24px 22px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 3px;
+      background: var(--cta);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .monogram {
+      width: 44px; height: 44px; flex: 0 0 44px;
+      display: grid; place-items: center;
+      background: var(--cta);
+      color: var(--on-accent);
+      font: 900 20px/1 var(--font-title);
+      clip-path: var(--chamfer);
+      letter-spacing: -0.02em;
+    }
+    .brand-name {
+      font: 700 15px/1.1 var(--font-title);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan-bright);
+      margin: 0;
+    }
+    .brand-sub { font-size: 12px; color: var(--text-3); margin: 3px 0 0; letter-spacing: 0.04em; }
+
+    h1 {
+      font: 700 clamp(1.5rem, 4.5vw, 2rem)/1.2 var(--font-title);
+      letter-spacing: 0.04em;
+      margin: 0 0 8px;
+      color: var(--text);
+    }
+    .meta { color: var(--text-3); font-size: .92rem; margin: 2px 0; }
+    .meta strong { color: var(--text-2); font-weight: 600; }
+    .updated {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 8px;
+      font-family: var(--font-number);
+      font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+      color: var(--cyan-number);
+    }
+    .updated::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--mint); box-shadow: 0 0 10px var(--mint);
+    }
+
+    /* Language switch — CTA chips with chamfer */
+    .lang-switch { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .lang-switch a {
+      display: inline-block;
+      padding: 9px 18px;
+      font: 600 13px/1 var(--font-body);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      text-decoration: none;
+      clip-path: var(--chamfer);
+      transition: transform .12s ease, filter .12s ease;
+    }
+    .lang-switch a:active { transform: translateY(1px); }
+    .lang-switch a.primary { background: var(--cta); color: var(--on-accent); }
+    .lang-switch a.primary:hover { filter: brightness(1.06); }
+    .lang-switch a.ghost {
+      background: var(--control); color: var(--text-2);
+      box-shadow: inset 0 0 0 1px var(--button-border);
+    }
+    .lang-switch a.ghost:hover { color: var(--text); background: rgba(255,255,255,0.10); }
+
+    /* Sections as cards */
+    section { scroll-margin-top: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: inset 0 1px 0 var(--bevel);
+      border-radius: 14px;
+      padding: 18px 20px 6px;
+      margin: 14px 0;
+    }
+    h2 {
+      display: flex; align-items: baseline; gap: 12px;
+      font: 700 1.05rem/1.3 var(--font-title);
+      letter-spacing: 0.04em;
+      margin: 0 0 10px;
+      color: var(--text);
+    }
+    h2 .num {
+      font: 700 0.85rem/1 var(--font-number);
+      color: var(--cyan);
+      letter-spacing: 0.06em;
+      min-width: 2ch;
+    }
+    .section-title {
+      font: 700 clamp(1.35rem, 4vw, 1.7rem)/1.2 var(--font-title);
+      letter-spacing: 0.05em;
+      margin: 0 0 8px;
+    }
+    p, li { color: var(--text-2); margin: 0 0 12px; }
+    strong { color: var(--text); font-weight: 600; }
+    em { color: var(--text); font-style: normal; font-weight: 500; }
+    ul { padding-left: 0; margin: 0 0 12px; list-style: none; }
+    li {
+      position: relative;
+      padding: 8px 12px 8px 30px;
+      margin: 0 0 6px;
+      background: var(--row);
+      border: 1px solid var(--row-border);
+      border-radius: 10px;
+    }
+    li::before {
+      content: "";
+      position: absolute; left: 12px; top: 16px;
+      width: 8px; height: 8px;
+      background: var(--cyan);
+      clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+      box-shadow: 0 0 8px rgba(47,211,240,0.55);
+    }
+    code {
+      font-family: var(--font-number);
+      font-size: .78em; font-weight: 500; letter-spacing: 0.04em;
+      color: var(--cyan-number);
+      background: var(--control);
+      border: 1px solid var(--button-border);
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+    .contact {
+      display: inline-block;
+      margin: 4px 0 12px;
+      padding: 12px 18px;
+      font: 600 15px/1 var(--font-body);
+      color: var(--on-accent);
+      background: var(--cta);
+      text-decoration: none;
+      clip-path: var(--chamfer);
+      word-break: break-all;
+    }
+    .contact:hover { color: var(--on-accent); filter: brightness(1.06); }
+
+    /* Divider between languages */
+    .divider {
+      display: flex; align-items: center; gap: 14px;
+      margin: 44px 0 28px;
+      color: var(--text-faint);
+      font: 700 11px/1 var(--font-title);
+      letter-spacing: 0.24em; text-transform: uppercase;
+    }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--divider); }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 18px;
+      border-top: 1px solid var(--divider);
+      color: var(--text-muted);
+      font-size: .85rem;
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px;
+    }
+    footer .brand-name { font-size: 12px; color: var(--text-3); }
+
+    @media (max-width: 480px) {
+      .hero { padding: 22px 18px 18px; }
+      .card { padding: 16px 16px 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <div class="brand">
+      <div class="monogram" aria-hidden="true">EH</div>
+      <div>
+        <p class="brand-name">Epic Hypernova</p>
+        <p class="brand-sub">Marcador de partidas · Score tracker</p>
+      </div>
+    </div>
+    <h1>Política de privacidad</h1>
+    <p class="meta"><strong>Epic Hypernova</strong> · aplicación Android (<code>epic.score.tracker</code>)</p>
+    <p class="updated">Última actualización: 17 · 09 · 2026</p>
+    <nav class="lang-switch" aria-label="Idioma / Language">
+      <a class="primary" href="#es">Español</a>
+      <a class="ghost" href="#en">English</a>
+    </nav>
+  </header>
+
+  <!-- ===================== ESPAÑOL ===================== -->
+  <section id="es" lang="es">
+
+    <div class="card">
+      <h2><span class="num">01</span>Quién es el responsable</h2>
+      <p>Epic Hypernova es una aplicación para llevar el marcador de partidas de juegos de mesa, desarrollada y publicada por un desarrollador independiente («nosotros»). Si tienes cualquier duda sobre esta política puedes escribir a <a href="mailto:nuestra.caja.app@gmail.com">nuestra.caja.app@gmail.com</a>.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">02</span>Resumen</h2>
+      <ul>
+        <li>La app <strong>no requiere cuenta ni registro</strong>.</li>
+        <li>Los datos que introduces (nombres de jugadores, puntuaciones, fichas de personaje, preferencias) se guardan <strong>únicamente en tu dispositivo</strong>. No tenemos servidores propios y no recibimos esa información.</li>
+        <li>La app muestra anuncios mediante <strong>Google AdMob</strong>, que puede recoger datos de tu dispositivo para mostrar y medir anuncios (ver sección 4).</li>
+        <li>No usamos servicios de analítica, ni seguimiento propio, ni vendemos datos.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">03</span>Datos que se guardan en tu dispositivo</h2>
+      <p>Para funcionar, la app almacena localmente:</p>
+      <ul>
+        <li>Nombres o alias de los jugadores que tú escribes, colores/iconos asignados y puntuaciones de cada partida.</li>
+        <li>Datos de fichas de personaje (por ejemplo la ficha de D&amp;D) y notas que decidas escribir.</li>
+        <li>Preferencias de la app: idioma elegido, último juego usado, ajustes de partida.</li>
+      </ul>
+      <p>Esta información se guarda en el almacenamiento privado de la app y no se transmite a nosotros ni a terceros. Puedes eliminarla borrando partidas o jugadores desde la propia app, borrando los datos de la app desde los ajustes de Android, o desinstalándola.</p>
+      <p><strong>Copia de seguridad de Android.</strong> Si tienes activada la copia de seguridad de Android en tu cuenta de Google, el sistema puede incluir los datos de esta app en esa copia. Ese proceso lo gestiona Google según su propia política de privacidad y puedes desactivarlo en los ajustes de tu dispositivo.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">04</span>Publicidad (Google AdMob)</h2>
+      <p>La app muestra anuncios (banner, intersticiales y anuncios con recompensa) a través de Google AdMob, un servicio de Google LLC. Para servir y medir anuncios, el SDK de AdMob puede recoger y tratar, entre otros:</p>
+      <ul>
+        <li>El <strong>identificador de publicidad</strong> de Android (Advertising ID).</li>
+        <li>Dirección IP aproximada, modelo de dispositivo, versión de Android, idioma, operador y datos de red.</li>
+        <li>Información sobre interacciones con los anuncios (impresiones, clics) y datos de diagnóstico.</li>
+      </ul>
+      <p>Google puede usar estos datos para personalizar anuncios según la configuración de tu dispositivo y las normas aplicables en tu región. Más información:</p>
+      <ul>
+        <li><a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Política de privacidad de Google</a></li>
+        <li><a href="https://policies.google.com/technologies/partner-sites" rel="noopener" target="_blank">Cómo usa Google la información de sitios y apps que utilizan sus servicios</a></li>
+        <li><a href="https://support.google.com/admob/answer/9755590" rel="noopener" target="_blank">Proveedores de tecnología publicitaria de AdMob</a></li>
+      </ul>
+      <p><strong>Cómo limitar la publicidad personalizada.</strong> En Android puedes ir a <em>Ajustes → Google → Anuncios</em> (o <em>Ajustes → Privacidad → Anuncios</em>) para eliminar o restablecer tu identificador de publicidad y desactivar la personalización de anuncios. En regiones donde la ley lo exige (por ejemplo el Espacio Económico Europeo o el Reino Unido), la app puede mostrar un aviso de consentimiento antes de cargar anuncios personalizados; puedes cambiar tu elección en cualquier momento desde ese aviso.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">05</span>Permisos que solicita la app</h2>
+      <ul>
+        <li><code>INTERNET</code> y <code>ACCESS_NETWORK_STATE</code>: necesarios para cargar los anuncios. La app no usa la conexión para nada más.</li>
+        <li><code>AD_ID</code>: permite al SDK de AdMob acceder al identificador de publicidad de Android.</li>
+      </ul>
+      <p>La app no accede a tu ubicación precisa, contactos, cámara, micrófono, fotos ni archivos.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">06</span>Menores</h2>
+      <p>La app no está dirigida a menores de 13 años y no recogemos conscientemente datos personales de menores. Si crees que un menor nos ha facilitado datos, contacta con nosotros y los eliminaremos.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">07</span>Seguridad</h2>
+      <p>Los datos de la app se guardan en el almacenamiento privado que Android reserva para cada aplicación, al que otras apps no tienen acceso. Al no existir servidores propios, no hay transmisión de tus datos de juego hacia nosotros.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">08</span>Tus derechos</h2>
+      <p>Según tu lugar de residencia (por ejemplo bajo el RGPD en la UE o la CCPA en California) puedes tener derecho a acceder, rectificar, eliminar o limitar el tratamiento de tus datos personales, así como a oponerte a él. Como la app no almacena tus datos en nuestros sistemas, la forma de ejercer estos derechos es:</p>
+      <ul>
+        <li>Para los datos locales: borrarlos desde la app o desinstalarla.</li>
+        <li>Para los datos tratados por AdMob: usar los controles de anuncios de Android descritos en la sección 4 o dirigirte a Google mediante los enlaces indicados.</li>
+      </ul>
+      <p>Para cualquier otra solicitud, escríbenos al correo de contacto.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">09</span>Cambios en esta política</h2>
+      <p>Podemos actualizar esta política si la app incorpora nuevas funciones o cambian los servicios de terceros. Publicaremos la versión vigente en esta misma dirección e indicaremos la fecha de la última actualización.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">10</span>Contacto</h2>
+      <p><a class="contact" href="mailto:nuestra.caja.app@gmail.com">nuestra.caja.app@gmail.com</a></p>
+    </div>
+
+  </section>
+
+  <div class="divider" role="separator">English</div>
+
+  <!-- ===================== ENGLISH ===================== -->
+  <section id="en" lang="en">
+
+    <div class="hero" style="margin-bottom:14px">
+      <h1 class="section-title">Privacy Policy</h1>
+      <p class="meta"><strong>Epic Hypernova</strong> · Android app (<code>epic.score.tracker</code>)</p>
+      <p class="updated">Last updated: 2026 · 09 · 17</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">01</span>Who we are</h2>
+      <p>Epic Hypernova is a score-tracking app for board games, developed and published by an independent developer ("we"). If you have any questions about this policy you can write to <a href="mailto:nuestra.caja.app@gmail.com">nuestra.caja.app@gmail.com</a>.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">02</span>Summary</h2>
+      <ul>
+        <li>The app <strong>does not require an account or sign-up</strong>.</li>
+        <li>Everything you enter (player names, scores, character sheets, preferences) is stored <strong>only on your device</strong>. We run no servers and never receive that information.</li>
+        <li>The app shows ads through <strong>Google AdMob</strong>, which may collect device data to serve and measure ads (see section 4).</li>
+        <li>We use no analytics, no tracking of our own, and we do not sell data.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">03</span>Data stored on your device</h2>
+      <p>To work, the app stores locally:</p>
+      <ul>
+        <li>Player names or nicknames you type, assigned colours/icons, and the scores of each game.</li>
+        <li>Character-sheet data (for example the D&amp;D sheet) and any notes you choose to write.</li>
+        <li>App preferences: selected language, last game used, match settings.</li>
+      </ul>
+      <p>This information lives in the app's private storage and is not transmitted to us or to third parties. You can remove it by deleting games or players inside the app, clearing the app's data from Android settings, or uninstalling the app.</p>
+      <p><strong>Android backup.</strong> If Android backup is enabled for your Google account, the system may include this app's data in that backup. That process is handled by Google under its own privacy policy and can be turned off in your device settings.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">04</span>Advertising (Google AdMob)</h2>
+      <p>The app displays ads (banner, interstitial and rewarded ads) through Google AdMob, a service of Google LLC. To serve and measure ads, the AdMob SDK may collect and process, among other things:</p>
+      <ul>
+        <li>The Android <strong>Advertising ID</strong>.</li>
+        <li>Approximate IP address, device model, Android version, language, carrier and network data.</li>
+        <li>Ad interaction data (impressions, clicks) and diagnostic information.</li>
+      </ul>
+      <p>Google may use this data to personalise ads depending on your device settings and the rules that apply in your region. Learn more:</p>
+      <ul>
+        <li><a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Google Privacy Policy</a></li>
+        <li><a href="https://policies.google.com/technologies/partner-sites" rel="noopener" target="_blank">How Google uses information from sites or apps that use its services</a></li>
+        <li><a href="https://support.google.com/admob/answer/9755590" rel="noopener" target="_blank">AdMob ad technology providers</a></li>
+      </ul>
+      <p><strong>Limiting personalised ads.</strong> On Android go to <em>Settings → Google → Ads</em> (or <em>Settings → Privacy → Ads</em>) to delete or reset your advertising ID and opt out of ad personalisation. Where required by law (for example in the European Economic Area or the United Kingdom), the app may show a consent prompt before loading personalised ads; you can change your choice at any time from that prompt.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">05</span>Permissions requested by the app</h2>
+      <ul>
+        <li><code>INTERNET</code> and <code>ACCESS_NETWORK_STATE</code>: required to load ads. The app uses the connection for nothing else.</li>
+        <li><code>AD_ID</code>: lets the AdMob SDK access the Android advertising ID.</li>
+      </ul>
+      <p>The app does not access your precise location, contacts, camera, microphone, photos or files.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">06</span>Children</h2>
+      <p>The app is not directed at children under 13 and we do not knowingly collect personal data from children. If you believe a child has provided us with data, contact us and we will delete it.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">07</span>Security</h2>
+      <p>App data is kept in the private storage Android reserves for each application, which other apps cannot access. Since we operate no servers, your game data is never transmitted to us.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">08</span>Your rights</h2>
+      <p>Depending on where you live (for example under the GDPR in the EU or the CCPA in California) you may have the right to access, correct, delete or restrict the processing of your personal data, and to object to it. Because the app does not store your data on our systems, the way to exercise these rights is:</p>
+      <ul>
+        <li>For local data: delete it from within the app or uninstall the app.</li>
+        <li>For data processed by AdMob: use the Android ad controls described in section 4 or contact Google through the links above.</li>
+      </ul>
+      <p>For any other request, write to our contact email.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">09</span>Changes to this policy</h2>
+      <p>We may update this policy if the app adds new features or third-party services change. The current version will always be published at this address, with the date of the last update.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">10</span>Contact</h2>
+      <p><a class="contact" href="mailto:nuestra.caja.app@gmail.com">nuestra.caja.app@gmail.com</a></p>
+    </div>
+
+  </section>
+
+  <footer>
+    <span>© 2026 Epic Hypernova</span>
+    <span class="brand-name">Epic Hypernova</span>
+  </footer>
+
+</main>
+</body>
+</html>

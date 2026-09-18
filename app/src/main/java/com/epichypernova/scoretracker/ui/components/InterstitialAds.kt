@@ -3,6 +3,7 @@ package com.epichypernova.scoretracker.ui.components
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.epichypernova.scoretracker.BuildConfig
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
@@ -13,14 +14,12 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 /**
- * Interstitial ad. TEST ad unit — replace [TEST_INTERSTITIAL] with your real ca-app-pub-XXXX/YYYY
- * before publishing. [onDone] always runs (after dismissal, or immediately on any failure).
+ * Interstitial ad. Ad unit id comes from BuildConfig (test in debug, admob.properties in release).
+ * [onDone] always runs (after dismissal, or immediately on any failure / before consent is gathered).
  */
-private const val TEST_INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"
-
-fun showInterstitialAd(context: Context, adUnitId: String = TEST_INTERSTITIAL, onDone: () -> Unit) {
+fun showInterstitialAd(context: Context, adUnitId: String = BuildConfig.ADMOB_INTERSTITIAL, onDone: () -> Unit) {
     val activity = context.findActivity()
-    if (activity == null) { onDone(); return }
+    if (activity == null || !AdsConsent.canRequestAds.value) { onDone(); return }
     InterstitialAd.load(
         context,
         adUnitId,

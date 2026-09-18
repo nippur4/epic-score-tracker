@@ -407,6 +407,9 @@
     <string name="sound">Sonido</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
-    <string name="about_version">Epic Hypernova Score Tracker · v1.2.0</string>
+    <string name="about_version">Epic Hypernova Score Tracker · v1.2.1</string>
     <string name="about_local">Todos los datos se guardan solo en este dispositivo.</string>
+    <string name="privacy">Privacidad</string>
+    <string name="privacy_options">Opciones de privacidad de anuncios</string>
+    <string name="privacy_policy">Política de privacidad</string>
 </resources>

@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.epichypernova.scoretracker.nav.AppNavGraph
+import com.epichypernova.scoretracker.ui.components.AdsConsent
 import com.epichypernova.scoretracker.ui.components.LocalSoundVolume
 import com.epichypernova.scoretracker.ui.theme.EpicHypernovaTheme
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        AdsConsent.gather(this)
         setContent { AppRoot() }
     }
 }

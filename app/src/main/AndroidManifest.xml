@@ -14,10 +14,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EpicHypernova">
 
-        <!-- AdMob App ID. TEST id shown here — replace with your real ca-app-pub-XXXX~YYYY before release. -->
+        <!-- AdMob App ID. Injected by app/build.gradle.kts: test id in debug, admob.properties `appId` in release. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="${admobAppId}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
