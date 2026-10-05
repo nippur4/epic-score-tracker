@@ -218,6 +218,8 @@
     <string name="dnd_ac">AC</string>
     <string name="dnd_init">Init</string>
     <string name="dnd_max_hp">Max HP</string>
+    <string name="dnd_hp">HP</string>
+    <string name="dnd_level_n">Level %1$d</string>
     <string name="dnd_death_saves">Death saves</string>
     <string name="dnd_unconscious">UNCONSCIOUS</string>
     <string name="dnd_stable">STABLE</string>
@@ -407,9 +409,18 @@
     <string name="sound">Sound</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
-    <string name="about_version">Epic Hypernova Score Tracker · v1.2.1</string>
+    <string name="about_version">Epic Hypernova Score Tracker · v%1$s</string>
     <string name="about_local">All data is stored only on this device.</string>
     <string name="privacy">Privacy</string>
     <string name="privacy_options">Ad privacy options</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="feedback">Contact</string>
+    <string name="feedback_suggest">Suggest a game or improvement</string>
+    <string name="feedback_bug">Report a bug</string>
+    <string name="feedback_suggest_subject">[Epic Hypernova] Game or improvement suggestion</string>
+    <string name="feedback_suggest_body">Thanks for sharing ideas! Fill in what you can and send the email.\n\n1) GAME NAME\n\n\n2) CATEGORY (card games · TCG · RPG &amp; miniatures · dice, bar &amp; sports · other)\n\n\n3) RULES\nHow it is played, how many players, whether there are hands or rounds, when the game ends.\n\n\n4) HOW SCORING WORKS\nWhat adds and what subtracts, whether there is a point limit, whether the highest or lowest score wins, any special bonuses or penalties.\n\n\n5) LOGO OR IMAGE\nAttach a file to this email if you have one.\n\n\n6) ANYTHING ELSE YOU WANT TO TELL US\n\n</string>
+    <string name="feedback_bug_subject">[Epic Hypernova] Bug report</string>
+    <string name="feedback_bug_body">Tell us what happened and we will look into it.\n\n1) GAME AND SCREEN WHERE IT HAPPENED\n\n\n2) WHAT YOU DID, STEP BY STEP\n\n\n3) WHAT YOU EXPECTED TO HAPPEN\n\n\n4) WHAT ACTUALLY HAPPENED\n\n\n5) SCREENSHOT\nAttach one to this email if you can.\n\n</string>
+    <string name="feedback_env">—\nEpic Hypernova v%1$s · %2$s · Android %3$s</string>
+    <string name="feedback_no_mail_app">No email app found. Write to us at %1$s</string>
 </resources>

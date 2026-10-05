@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
+import com.epichypernova.scoretracker.data.DndRules
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.DndCharacter
@@ -74,7 +75,7 @@ import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 import kotlinx.coroutines.delay
 
-private val HP_LOW = Color(0xFFEB5757)
+internal val HP_LOW = Color(0xFFEB5757)
 private val INSPIRATION = Color(0xFFFFD98A)
 
 /** App palette + a few fantasy-flavoured tones (gold, bone, crimson, forest). */
@@ -273,10 +274,16 @@ private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit:
     Column(Modifier.fillMaxWidth().clip(shape).then(bg).border(1.dp, tint.copy(alpha = if (dead) 0.15f else 0.35f), shape).padding(horizontal = 14.dp, vertical = 12.dp)) {
         // header: swatch + name (tap to edit) · inspiration star
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.weight(1f).clickable { onEdit() }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Box(Modifier.size(12.dp).clip(CircleShape).background(tint).border(1.dp, Color(0x33FFFFFF), CircleShape))
-                Text(c.name.uppercase(), color = tint, maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.9.sp))
-                Text("✎", color = Palette.TextMuted, style = TextStyle(fontSize = 11.sp))
+            Column(Modifier.weight(1f).clickable { onEdit() }) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(12.dp).clip(CircleShape).background(tint).border(1.dp, Color(0x33FFFFFF), CircleShape))
+                    Text(c.name.uppercase(), color = tint, maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.9.sp))
+                    Text("✎", color = Palette.TextMuted, style = TextStyle(fontSize = 11.sp))
+                }
+                // level / class / race come from the sheet tab, so edits there show up here too
+                val sheetInfo = listOf(stringResource(R.string.dnd_level_n, c.level), c.dndClass, c.race)
+                    .filter { it.isNotBlank() }.joinToString(" · ")
+                Text(sheetInfo, color = Palette.TextMuted, maxLines = 1, modifier = Modifier.padding(top = 2.dp), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 10.sp, letterSpacing = 0.5.sp))
             }
             // jump to this character's sheet
             Box(Modifier.size(30.dp).clip(CircleShape).background(Color(0x14FFFFFF)).clickable { onSheet() }, contentAlignment = Alignment.Center) {
@@ -316,7 +323,11 @@ private fun CharacterCard(c: DndCharacter, index: Int, repo: Repository, onEdit:
                 onDec = { repo.update { AppActions.dndTempHp(it, index, -1) } }, onInc = { repo.update { AppActions.dndTempHp(it, index, +1) } })
             StatChip(stringResource(R.string.dnd_ac), c.ac, Palette.TextSecondary, R.drawable.ic_shield,
                 onDec = { repo.update { AppActions.dndAc(it, index, -1) } }, onInc = { repo.update { AppActions.dndAc(it, index, +1) } })
-            StatChip(stringResource(R.string.dnd_init), c.initiative, INSPIRATION, R.drawable.ic_d20,
+            // the sheet's DEX modifier rides along so the DM knows what to add to the d20
+            val initBonus = DndRules.initiativeBonus(c)
+            val initLabel = stringResource(R.string.dnd_init) +
+                if (initBonus != 0) " · ${stringResource(R.string.dnd_ab_dex)} ${DndRules.signed(initBonus)}" else ""
+            StatChip(initLabel, c.initiative, INSPIRATION, R.drawable.ic_d20,
                 onDec = { repo.update { AppActions.dndInitiative(it, index, -1) } }, onInc = { repo.update { AppActions.dndInitiative(it, index, +1) } })
         }
     }
@@ -331,7 +342,7 @@ private fun HpButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun HpBar(hp: Int, maxHp: Int, temp: Int, tint: Color) {
+internal fun HpBar(hp: Int, maxHp: Int, temp: Int, tint: Color) {
     val frac by animateFloatAsState((hp.toFloat() / maxHp.coerceAtLeast(1)).coerceIn(0f, 1f), label = "hp")
     val tempFrac = (temp.toFloat() / maxHp.coerceAtLeast(1)).coerceIn(0f, 1f - frac)
     Row(Modifier.fillMaxWidth().padding(top = 4.dp).height(6.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x22FFFFFF))) {

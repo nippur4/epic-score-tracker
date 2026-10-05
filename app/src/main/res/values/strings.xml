@@ -218,6 +218,8 @@
     <string name="dnd_ac">CA</string>
     <string name="dnd_init">Inic</string>
     <string name="dnd_max_hp">HP máximo</string>
+    <string name="dnd_hp">HP</string>
+    <string name="dnd_level_n">Nivel %1$d</string>
     <string name="dnd_death_saves">Salvaciones de muerte</string>
     <string name="dnd_unconscious">INCONSCIENTE</string>
     <string name="dnd_stable">ESTABLE</string>
@@ -407,9 +409,18 @@
     <string name="sound">Sonido</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
-    <string name="about_version">Epic Hypernova Score Tracker · v1.2.1</string>
+    <string name="about_version">Epic Hypernova Score Tracker · v%1$s</string>
     <string name="about_local">Todos los datos se guardan solo en este dispositivo.</string>
     <string name="privacy">Privacidad</string>
     <string name="privacy_options">Opciones de privacidad de anuncios</string>
     <string name="privacy_policy">Política de privacidad</string>
+    <string name="feedback">Contacto</string>
+    <string name="feedback_suggest">Sugerir un juego o mejora</string>
+    <string name="feedback_bug">Reportar un error</string>
+    <string name="feedback_suggest_subject">[Epic Hypernova] Sugerencia de juego o mejora</string>
+    <string name="feedback_suggest_body">¡Gracias por sumar ideas! Completá lo que puedas y mandá el correo.\n\n1) NOMBRE DEL JUEGO\n\n\n2) CATEGORÍA (cartas · TCG · rol y miniaturas · dados, bar y deportes · otra)\n\n\n3) REGLAS\nCómo se juega, cuántos jugadores, si hay manos o rondas, cuándo termina la partida.\n\n\n4) CÓMO SE PUNTÚA\nQué suma y qué resta, si hay límite de puntos, si gana el más alto o el más bajo, premios o penalizaciones especiales.\n\n\n5) LOGO O IMAGEN\nAdjuntá un archivo a este correo si tenés uno.\n\n\n6) ALGO MÁS QUE QUIERAS CONTARNOS\n\n</string>
+    <string name="feedback_bug_subject">[Epic Hypernova] Reporte de error</string>
+    <string name="feedback_bug_body">Contanos qué pasó y lo revisamos.\n\n1) JUEGO Y PANTALLA DONDE PASÓ\n\n\n2) QUÉ HICISTE, PASO A PASO\n\n\n3) QUÉ ESPERABAS QUE PASARA\n\n\n4) QUÉ PASÓ EN REALIDAD\n\n\n5) CAPTURA DE PANTALLA\nAdjuntá una a este correo si podés.\n\n</string>
+    <string name="feedback_env">—\nEpic Hypernova v%1$s · %2$s · Android %3$s</string>
+    <string name="feedback_no_mail_app">No encontramos una app de correo. Escribinos a %1$s</string>
 </resources>

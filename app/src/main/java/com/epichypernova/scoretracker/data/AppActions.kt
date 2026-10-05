@@ -1145,10 +1145,28 @@ object AppActions {
         return s.copy(dndGame = g.copy(characters = g.characters.filterIndexed { i, _ -> i != index }))
     }
 
+    /**
+     * Max HP belongs to both the combat tracker and the sheet, so every edit goes through here:
+     * raising it also grants that much current HP (like levelling up), lowering it only clamps.
+     * A character at 0 HP stays down — extra max HP never revives them.
+     */
+    private fun dndWithMaxHp(c: DndCharacter, maxHp: Int): DndCharacter {
+        val max = maxHp.coerceIn(1, 999)
+        val delta = max - c.maxHp
+        val hp = when {
+            c.hp <= 0 -> 0
+            delta > 0 -> (c.hp + delta).coerceAtMost(max)
+            else -> c.hp.coerceIn(1, max)
+        }
+        return c.copy(maxHp = max, hp = hp)
+    }
+
+    fun dndMaxHp(s: AppState, index: Int, delta: Int): AppState =
+        dndUpdate(s, index) { dndWithMaxHp(it, it.maxHp + delta) }
+
     fun dndEdit(s: AppState, index: Int, name: String, color: Long, maxHp: Int): AppState =
         dndUpdate(s, index) { c ->
-            val max = maxHp.coerceAtLeast(1)
-            c.copy(name = name.trim().ifBlank { c.name }, color = color, maxHp = max, hp = c.hp.coerceAtMost(max))
+            dndWithMaxHp(c.copy(name = name.trim().ifBlank { c.name }, color = color), maxHp)
         }
 
     /** Damage eats temporary HP first; HP never goes below 0 (death saves start there). */

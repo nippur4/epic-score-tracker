@@ -130,7 +130,7 @@ fun DndSheetSection(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             HeaderCard(c, index, key, repo, onEdit = { onEditCharacter(index) })
-            VitalsCard(c, index, repo, onEditHp = { onEditCharacter(index) })
+            VitalsCard(c, index, repo)
             AbilitiesCard(c, index, repo)
             SkillsCard(c, index, repo)
             AttacksCard(c, onAdd = { attackFor = -1; showAttack = true }, onEdit = { attackFor = it; showAttack = true })
@@ -185,7 +185,18 @@ private fun SheetCard(title: String, trailing: (@Composable () -> Unit)? = null,
 @Composable
 private fun HeaderCard(c: DndCharacter, index: Int, key: String, repo: Repository, onEdit: () -> Unit) {
     val tint = Color(c.color)
-    SheetCard(stringResource(R.string.dnd_edit_title)) {
+    SheetCard(stringResource(R.string.dnd_edit_title), trailing = {
+        // same flag the combat tracker's star toggles
+        Row(
+            Modifier.clip(RoundedCornerShape(999.dp)).background(if (c.inspiration) GOLD.copy(alpha = 0.22f) else Color.Transparent)
+                .border(1.dp, if (c.inspiration) GOLD.copy(alpha = 0.7f) else Palette.ButtonBorder, RoundedCornerShape(999.dp))
+                .clickable { repo.update { s -> AppActions.dndToggleInspiration(s, index) } }.padding(horizontal = 9.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            GameIcon(R.drawable.ic_star, if (c.inspiration) GOLD else Palette.TextMuted, 12)
+            Text(stringResource(R.string.dnd_inspiration), color = if (c.inspiration) GOLD else Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 10.sp))
+        }
+    }) {
         Row(Modifier.fillMaxWidth().clickable { onEdit() }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(14.dp).clip(CircleShape).background(tint).border(1.dp, Color(0x33FFFFFF), CircleShape))
             Text(c.name, color = tint, modifier = Modifier.weight(1f), maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 20.sp))
@@ -242,14 +253,42 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 
 // ---- vitals: HP, AC, speed, initiative bonus, passive perception ----
 
+/**
+ * The vitals are the combat tracker's own numbers, editable from here as well: HP, max HP,
+ * temporary HP, AC and speed all write to the same character, so either tab shows the change.
+ */
 @Composable
-private fun VitalsCard(c: DndCharacter, index: Int, repo: Repository, onEditHp: () -> Unit) {
+private fun VitalsCard(c: DndCharacter, index: Int, repo: Repository) {
+    val tint = Color(c.color)
+    val down = c.hp <= 0
+    val dead = down && c.deathFail >= 3
+    val hpColor = when {
+        dead -> Palette.TextMuted
+        down || c.hp <= c.maxHp / 4 -> HP_LOW
+        else -> Palette.TextPrimary
+    }
     SheetCard(stringResource(R.string.dnd_mode_combat)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatTile(stringResource(R.string.dnd_max_hp), "${c.hp}/${c.maxHp}", Modifier.weight(1.2f), onClick = onEditHp)
-            StatTile(stringResource(R.string.dnd_ac), "${c.ac}", Modifier.weight(1.4f),
+            StatTile(stringResource(R.string.dnd_hp), "${c.hp}", Modifier.weight(1f), accent = hpColor,
+                onDec = { repo.update { s -> AppActions.dndDamage(s, index, 1) } }, onInc = { repo.update { s -> AppActions.dndHeal(s, index, 1) } })
+            StatTile(stringResource(R.string.dnd_max_hp), "${c.maxHp}", Modifier.weight(1f),
+                onDec = { repo.update { s -> AppActions.dndMaxHp(s, index, -1) } }, onInc = { repo.update { s -> AppActions.dndMaxHp(s, index, +1) } })
+        }
+        HpBar(c.hp, c.maxHp, c.tempHp, tint)
+        if (down) {
+            val status = if (dead) R.string.dnd_dead else if (c.deathSuccess >= 3) R.string.dnd_stable else R.string.dnd_unconscious
+            Text(
+                "${stringResource(status)} · ✓${c.deathSuccess} ✗${c.deathFail}",
+                color = if (dead) HP_LOW else GOLD,
+                style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.2.sp),
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatTile(stringResource(R.string.dnd_temp), "${c.tempHp}", Modifier.weight(1f), accent = Palette.Cyan,
+                onDec = { repo.update { s -> AppActions.dndTempHp(s, index, -1) } }, onInc = { repo.update { s -> AppActions.dndTempHp(s, index, +1) } })
+            StatTile(stringResource(R.string.dnd_ac), "${c.ac}", Modifier.weight(1f),
                 onDec = { repo.update { s -> AppActions.dndAc(s, index, -1) } }, onInc = { repo.update { s -> AppActions.dndAc(s, index, +1) } })
-            StatTile(stringResource(R.string.dnd_speed), "${c.speed}", Modifier.weight(1.4f),
+            StatTile(stringResource(R.string.dnd_speed), "${c.speed}", Modifier.weight(1.2f),
                 onDec = { repo.update { s -> AppActions.dndSpeed(s, index, -5) } }, onInc = { repo.update { s -> AppActions.dndSpeed(s, index, +5) } })
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

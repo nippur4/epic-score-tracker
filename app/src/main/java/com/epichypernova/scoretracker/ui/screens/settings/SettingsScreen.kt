@@ -1,15 +1,22 @@
 package com.epichypernova.scoretracker.ui.screens.settings
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -40,6 +47,23 @@ import com.epichypernova.scoretracker.ui.theme.Cinzel
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 
+/** Public address for suggestions and bug reports; also the contact in the privacy policy. */
+private const val CONTACT_EMAIL = "nuestra.caja.app@gmail.com"
+
+/**
+ * Opens the user's mail app with a pre-filled template. If no mail app can handle it, the address
+ * is surfaced in a toast so the message isn't simply lost.
+ */
+private fun composeEmail(context: Context, subject: String, body: String, noMailApp: String) {
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$CONTACT_EMAIL")).apply {
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
+    }
+    if (runCatching { context.startActivity(intent) }.isFailure) {
+        Toast.makeText(context, noMailApp, Toast.LENGTH_LONG).show()
+    }
+}
+
 @Composable
 fun SettingsScreen(
     repo: Repository,
@@ -52,10 +76,22 @@ fun SettingsScreen(
     val context = LocalContext.current
     val privacyOptionsRequired = remember { AdsConsent.isPrivacyOptionsRequired(context) }
     val privacyPolicyUrl = BuildConfig.PRIVACY_POLICY_URL
+    val envFooter = stringResource(
+        R.string.feedback_env,
+        BuildConfig.VERSION_NAME,
+        "${Build.MANUFACTURER} ${Build.MODEL}",
+        Build.VERSION.RELEASE,
+    )
+    val noMailApp = stringResource(R.string.feedback_no_mail_app, CONTACT_EMAIL)
+    val suggestSubject = stringResource(R.string.feedback_suggest_subject)
+    val suggestBody = stringResource(R.string.feedback_suggest_body) + "\n" + envFooter
+    val bugSubject = stringResource(R.string.feedback_bug_subject)
+    val bugBody = stringResource(R.string.feedback_bug_body) + "\n" + envFooter
 
     TabScaffold(AppTab.AJUSTES, tabLabels, onSelectTab) { padding ->
         Column(
-            Modifier.fillMaxSize().background(Palette.AppBg).padding(padding).padding(horizontal = 20.dp),
+            Modifier.fillMaxSize().background(Palette.AppBg).padding(padding)
+                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
@@ -116,7 +152,7 @@ fun SettingsScreen(
             }
 
             Text(
-                stringResource(R.string.about_version),
+                stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
                 color = Palette.TextTertiary,
                 style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
                 modifier = Modifier.padding(top = 20.dp),
@@ -126,6 +162,21 @@ fun SettingsScreen(
                 color = Palette.TextMuted,
                 style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp),
             )
+
+            SectionLabel(stringResource(R.string.feedback), modifier = Modifier.padding(top = 18.dp))
+            SecondaryButton(
+                text = stringResource(R.string.feedback_suggest),
+                onClick = { composeEmail(context, suggestSubject, suggestBody, noMailApp) },
+                modifier = Modifier.fillMaxWidth(),
+                height = 44,
+            )
+            SecondaryButton(
+                text = stringResource(R.string.feedback_bug),
+                onClick = { composeEmail(context, bugSubject, bugBody, noMailApp) },
+                modifier = Modifier.fillMaxWidth(),
+                height = 44,
+            )
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

@@ -6,9 +6,9 @@ abajo los cumplen.
 
 ## Datos técnicos de la app
 - **applicationId**: `epic.score.tracker`
-- **versionName / versionCode**: `1.2.1` / `5` (prueba cerrada; 1–4 ya usados en Play)
+- **versionName / versionCode**: `1.3.0` / `6` (1–5 ya usados en Play; el 5 fue la prueba cerrada)
 - **minSdk / targetSdk**: 24 / 36
-- **Bundle**: `EpicHypernova-v1.2.1-vc5.aab` (raíz del proyecto)
+- **Bundle**: `EpicHypernova-v1.3.0-vc6.aab` (raíz del proyecto)
 - **Categoría**: Aplicación → **Entretenimiento** (no "Juego": es una herramienta para jugar en mesa)
 - **Anuncios**: **Sí** — Google AdMob (banner, intersticial cada varias partidas, y recompensado
   opcional para desbloquear avatares)
