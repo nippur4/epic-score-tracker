@@ -105,6 +105,8 @@ data class CurrentGame(
     val rules: GenericRules,
     val rounds: List<Round> = emptyList(),
     val startedAt: Long,
+    /** Points someone joined the game with, by playerId. Counted on top of their rounds. */
+    val startScores: Map<String, Int> = emptyMap(),
 )
 
 // ---- Truco ----
@@ -515,6 +517,8 @@ data class HistoryEntry(
     val winnerNames: List<String>,
     val summary: String,
     val finishedAt: Long,
+    /** Final scoreboard, so the history can show more than the headline. Empty on old entries. */
+    val lines: List<ResultLine> = emptyList(),
 )
 
 // ---- End-of-game result (shown on the winner screen) ----
@@ -534,6 +538,8 @@ data class GameResult(
     val winners: List<String>,
     val lines: List<ResultLine>,
     val summary: String,
+    /** Same players and rules with a clean sheet, for "otra partida" on the generic table. */
+    val rematchGame: CurrentGame? = null,
 )
 
 // ---- Settings ----
@@ -542,6 +548,20 @@ data class GameResult(
 data class Settings(
     val language: String = "es",   // "es" | "en"
     val soundVolume: Float = 1f,   // 0f..1f
+    val keepScreenOn: Boolean = true,  // boards don't let the phone sleep mid-game
+    val menuGrid: Boolean = false,     // menu view: false = list, true = mosaic
+)
+
+// ---- Dice tray ----
+
+/**
+ * The standalone dice roller: up to five dice, each with its own number of [sides],
+ * and whatever they last showed.
+ */
+@Serializable
+data class DiceTray(
+    val sides: List<Int> = listOf(20),
+    val results: List<Int> = emptyList(),
 )
 
 /** Root persisted state — serialized as one JSON blob in DataStore. */
@@ -571,6 +591,7 @@ data class AppState(
     val swuGame: SwuGame? = null,
     val escobaGame: EscobaGame? = null,
     val musGame: MusGame? = null,
+    val dice: DiceTray = DiceTray(),
     val history: List<HistoryEntry> = emptyList(),
     val settings: Settings = Settings(),
     val pendingResult: GameResult? = null,

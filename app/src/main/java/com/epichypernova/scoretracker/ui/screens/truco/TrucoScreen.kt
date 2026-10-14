@@ -43,7 +43,10 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.TrucoSide
 import com.epichypernova.scoretracker.ui.components.ChamferCta
 import com.epichypernova.scoretracker.ui.components.CompactHeader
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.FinishMenu
+import com.epichypernova.scoretracker.ui.components.RulesDialog
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.rememberAdGate
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
@@ -65,6 +68,8 @@ fun TrucoScreen(
     }
     val whoosh = rememberSoundEffect(R.raw.whoosh)
     var menu by remember { mutableStateOf(false) }
+    var showRules by remember { mutableStateOf(false) }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.trucoFinish(it) } }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         Box(Modifier.fillMaxWidth()) {
@@ -82,7 +87,12 @@ fun TrucoScreen(
                 onTrailing = { menu = true },
             )
             Box(Modifier.align(Alignment.TopEnd)) {
-                FinishMenu(menu, { menu = false }, onFinish = { repo.update { AppActions.trucoFinish(it) } })
+                FinishMenu(
+                    menu,
+                    { menu = false },
+                    onFinish = askFinish,
+                    onRules = { showRules = true },
+                )
             }
         }
 
@@ -115,6 +125,10 @@ fun TrucoScreen(
             FooterButton(stringResource(R.string.truco_undo), filled = false, modifier = Modifier.weight(1f)) { repo.update { AppActions.trucoUndo(it) } }
             FooterButton(stringResource(R.string.truco_new_match), filled = true, modifier = Modifier.weight(1f)) { repo.update { AppActions.trucoNewMatch(it) } }
         }
+    }
+
+    if (showRules) {
+        RulesDialog(GameType.TRUCO) { showRules = false }
     }
 }
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,10 +46,18 @@ import com.epichypernova.scoretracker.data.model.GeneralaCat
 import com.epichypernova.scoretracker.ui.components.DieFace
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.Standing
+import com.epichypernova.scoretracker.ui.components.StandingsPill
+import com.epichypernova.scoretracker.ui.components.StandingsSheet
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -85,7 +94,7 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     if (game == null || (game.finished && state.pendingResult == null)) {
         PlayerSetupScreen(
             repo = repo, state = state, gameType = GameType.GENERALA,
-            minPlayers = 1, maxPlayers = 12, defaultCount = 2, onBack = onBack,
+            minPlayers = 1, maxPlayers = null, defaultCount = 2, onBack = onBack,
             onStart = { players -> repo.update { AppActions.generalaStart(it, players) } },
         )
         return
@@ -96,6 +105,11 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var cell by remember { mutableStateOf<Pair<Int, GeneralaCat>?>(null) }
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.generalaReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.generalaNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.generalaFinish(it) } }
+    var showAdd by remember { mutableStateOf(false) }
+    var showStandings by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         // top bar
@@ -106,60 +120,77 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             Text(
                 stringResource(R.string.generala_turn, players.getOrNull(turn)?.name ?: ""),
                 color = Color(players.getOrNull(turn)?.color ?: 0xFFFFFFFF), modifier = Modifier.weight(1f), maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.4.sp),
             )
-            GamePill("＋") { repo.update { AppActions.generalaAddPlayer(it) } }
-            GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.generalaReset(it) } }
+            StandingsPill { showStandings = true }
+            GamePill("＋") { showAdd = true }
+            GamePill(stringResource(R.string.score_reset)) { askReset() }
             GamePill("⚙") { showConfig = true }
         }
 
         val hScroll = rememberScrollState()
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).horizontalScroll(hScroll).padding(12.dp)) {
-            // header
-            Row(Modifier.height(ROW_H), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.width(CAT_W))
-                players.forEachIndexed { i, p ->
-                    val isTurn = i == turn
-                    Box(
-                        Modifier.width(COL_W).height(36.dp).padding(horizontal = 3.dp).clip(RoundedCornerShape(10.dp))
-                            .background(if (isTurn) Color(p.color).copy(alpha = 0.25f) else Color.Transparent)
-                            .border(1.dp, Color(p.color).copy(alpha = if (isTurn) 0.9f else 0.35f), RoundedCornerShape(10.dp))
-                            .clickable { renameFor = i },
-                        contentAlignment = Alignment.Center,
+        // The category column stays pinned; however many players there are, they scroll under it.
+        Row(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
+            Column(Modifier.width(CAT_W)) {
+                Box(Modifier.height(ROW_H))
+                GeneralaCat.entries.forEach { cat ->
+                    Row(
+                        Modifier.height(ROW_H).then(if (cat == GeneralaCat.ESCALERA) Modifier.padding(top = 6.dp) else Modifier)
+                            .background(Color(0x0DFFFFFF), RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(p.name.take(6).uppercase(), color = Color(p.color), maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 0.8.sp))
+                        CatLabel(cat, Modifier.padding(start = 8.dp))
                     }
                 }
+                Row(Modifier.height(ROW_H).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.generala_total), color = ACCENT, modifier = Modifier.padding(start = 8.dp), style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.5.sp))
+                }
             }
-            GeneralaCat.entries.forEach { cat ->
-                val sectionStart = cat == GeneralaCat.ESCALERA
-                Row(
-                    Modifier.height(ROW_H).then(if (sectionStart) Modifier.padding(top = 6.dp) else Modifier).background(Color(0x0DFFFFFF), RoundedCornerShape(8.dp)),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CatLabel(cat, Modifier.width(CAT_W).padding(start = 8.dp))
+            Column(Modifier.horizontalScroll(hScroll)) {
+                // header
+                Row(Modifier.height(ROW_H), verticalAlignment = Alignment.CenterVertically) {
                     players.forEachIndexed { i, p ->
-                        val v = p.scores[cat]
+                        val isTurn = i == turn
                         Box(
-                            Modifier.width(COL_W).height(36.dp).padding(horizontal = 3.dp).clip(RoundedCornerShape(8.dp))
-                                .background(if (v == null) Color(0x14FFFFFF) else Color(p.color).copy(alpha = 0.16f))
-                                .clickable { cell = i to cat },
+                            Modifier.width(COL_W).height(36.dp).padding(horizontal = 3.dp).clip(RoundedCornerShape(10.dp))
+                                .background(if (isTurn) Color(p.color).copy(alpha = 0.25f) else Color.Transparent)
+                                .border(1.dp, Color(p.color).copy(alpha = if (isTurn) 0.9f else 0.35f), RoundedCornerShape(10.dp))
+                                .clickable { renameFor = i },
                             contentAlignment = Alignment.Center,
                         ) {
-                            when {
-                                v == null -> Text("·", color = Palette.TextMuted, style = TextStyle(fontSize = 16.sp))
-                                v == 0 -> Text("✕", color = Palette.TextMuted, style = TextStyle(fontSize = 14.sp))
-                                else -> Text("$v", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFeatureSettings = "tnum"))
+                            Text(p.name.take(6).uppercase(), color = Color(p.color), maxLines = 1, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 0.8.sp))
+                        }
+                    }
+                }
+                GeneralaCat.entries.forEach { cat ->
+                    Row(
+                        Modifier.height(ROW_H).then(if (cat == GeneralaCat.ESCALERA) Modifier.padding(top = 6.dp) else Modifier)
+                            .background(Color(0x0DFFFFFF)),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        players.forEachIndexed { i, p ->
+                            val v = p.scores[cat]
+                            Box(
+                                Modifier.width(COL_W).height(36.dp).padding(horizontal = 3.dp).clip(RoundedCornerShape(8.dp))
+                                    .background(if (v == null) Color(0x14FFFFFF) else Color(p.color).copy(alpha = 0.16f))
+                                    .clickable { cell = i to cat },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                when {
+                                    v == null -> Text("·", color = Palette.TextMuted, style = TextStyle(fontSize = 16.sp))
+                                    v == 0 -> Text("✕", color = Palette.TextMuted, style = TextStyle(fontSize = 14.sp))
+                                    else -> Text("$v", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFeatureSettings = "tnum"))
+                                }
                             }
                         }
                     }
                 }
-            }
-            // totals
-            Row(Modifier.height(ROW_H).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.generala_total), color = ACCENT, modifier = Modifier.width(CAT_W).padding(start = 8.dp), style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.5.sp))
-                players.forEach { p ->
-                    Text("${AppActions.generalaTotal(p)}", color = Color(p.color), modifier = Modifier.width(COL_W), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, fontFeatureSettings = "tnum"))
+                // totals
+                Row(Modifier.height(ROW_H).padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    players.forEach { p ->
+                        Text("${AppActions.generalaTotal(p)}", color = Color(p.color), modifier = Modifier.width(COL_W), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, fontFeatureSettings = "tnum"))
+                    }
                 }
             }
         }
@@ -182,11 +213,30 @@ fun GeneralaScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             onRemove = if (players.size > 1) ({ repo.update { AppActions.generalaRemovePlayer(it, renameFor) } }) else null,
         )
     }
+    if (showAdd) {
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { u -> players.any { it.userId == u.id } },
+            title = stringResource(R.string.add_player_title),
+            allowGuest = true,
+            onConfirm = { added, _ -> repo.update { s -> added.fold(s) { acc, p -> AppActions.generalaAddPlayer(acc, p) } } },
+            onClose = { showAdd = false },
+        )
+    }
+    if (showStandings) {
+        StandingsSheet(
+            entries = players.map { Standing(it.name, Color(it.color), AppActions.generalaTotal(it)) },
+            lowWins = false,
+            accent = ACCENT,
+            onClose = { showStandings = false },
+        )
+    }
     if (showConfig) {
         ConfigSheet(
-            onAdd = { repo.update { AppActions.generalaAddPlayer(it) } },
-            onNew = { repo.update { AppActions.generalaNew(it) } },
-            onFinish = { repo.update { AppActions.generalaFinish(it) } },
+            onAdd = { showAdd = true },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -247,6 +297,7 @@ private fun ConfigSheet(onAdd: () -> Unit, onNew: () -> Unit, onFinish: () -> Un
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SheetPrimaryButton(stringResource(R.string.player_add), ACCENT) { onAdd(); onClose() }
+            RulesButton(GameType.GENERALA)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

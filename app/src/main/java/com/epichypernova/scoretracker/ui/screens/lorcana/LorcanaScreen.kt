@@ -51,6 +51,8 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.LorcanaPlayer
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -85,12 +87,14 @@ fun LorcanaScreen(
     val players = game.players
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.lorcanaReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.lorcanaFinish(it) } }
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
     val bar: @Composable () -> Unit = {
         CentralBar(
             target = game.targetLore,
-            onReset = { repo.update { AppActions.lorcanaReset(it) } },
+            onReset = { askReset() },
             onConfig = { showConfig = true },
         )
     }
@@ -131,7 +135,7 @@ fun LorcanaScreen(
             count = players.size,
             target = game.targetLore,
             onApply = { count, target -> repo.update { AppActions.lorcanaConfigure(it, count, target) } },
-            onFinish = { repo.update { AppActions.lorcanaFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

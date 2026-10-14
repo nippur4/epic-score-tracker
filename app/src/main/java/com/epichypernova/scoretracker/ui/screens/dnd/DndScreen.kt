@@ -66,6 +66,9 @@ import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
@@ -97,7 +100,7 @@ fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     if (game == null || (game.finished && state.pendingResult == null)) {
         PlayerSetupScreen(
             repo = repo, state = state, gameType = GameType.DND,
-            minPlayers = 1, maxPlayers = 8, defaultCount = 4, onBack = onBack,
+            minPlayers = 1, maxPlayers = null, defaultCount = 4, onBack = onBack,
             onStart = { players -> repo.update { AppActions.dndStart(it, players) } },
         )
         return
@@ -110,6 +113,9 @@ fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     var padFor by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }   // (index, isDamage)
     var editFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.dndReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.dndNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.dndFinish(it) } }
     var showRoll by remember { mutableStateOf(false) }
     // 0 = combat tracker, 1 = character sheets; survives rotation / process death
     var mode by rememberSaveable { mutableIntStateOf(0) }
@@ -190,9 +196,9 @@ fun DndScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             sortByInit = game.sortByInitiative,
             onToggleSort = { repo.update { AppActions.dndToggleSort(it) } },
             onLongRest = { repo.update { AppActions.dndLongRest(it) } },
-            onReset = { repo.update { AppActions.dndReset(it) } },
-            onNew = { repo.update { AppActions.dndNew(it) } },
-            onFinish = { repo.update { AppActions.dndFinish(it) } },
+            onReset = { askReset() },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

@@ -82,7 +82,7 @@
     <!-- Generic setup -->
     <string name="new_game">Nueva partida</string>
     <string name="players_label">Jugadores</string>
-    <string name="players_count">%1$d de 6</string>
+    <string name="players_count">%1$d jugadores</string>
     <string name="rules">Reglas</string>
     <string name="target_score">Puntaje objetivo</string>
     <string name="wins">Gana</string>
@@ -98,7 +98,7 @@
     <string name="save_config_sub">Empezar más rápido la próxima vez</string>
     <string name="start_game">Empezar partida</string>
     <string name="add_player_chip">＋ Agregar</string>
-    <string name="add_player_title">Agregar jugador</string>
+    <string name="add_player_title">Agregar jugadores</string>
 
     <!-- Generic table -->
     <string name="table_meta">Mano %1$d · a %2$d · gana el %3$s</string>
@@ -119,6 +119,14 @@
     <string name="back_to_menu">Volver al menú</string>
     <string name="no_current_game">No hay partida en curso</string>
     <string name="leader_note">%1$s va ganando con %2$d · la partida cierra cuando alguien llega a %3$d</string>
+
+    <!-- Standings -->
+    <string name="standings_title">Ver posiciones</string>
+    <string name="standings_rule">Gana el %1$s puntaje</string>
+    <string name="standings_leader">Va ganando</string>
+    <string name="standings_behind">A %1$d del primero</string>
+    <string name="standings_tied">Empatado en el primer puesto</string>
+
     <string name="bid_pedia">dijo %1$d</string>
     <string name="save_hand">Guardar puntos</string>
 
@@ -290,6 +298,10 @@
     <!-- Generala / Bowling / Uno / Warhammer / Poker / SWU / Escoba / Mus -->
     <string name="player_add">＋ Jugador</string>
     <string name="player_remove">Quitar jugador</string>
+    <string name="player_remove_note">Se va de esta partida y se borra lo que anotó.</string>
+    <string name="player_remove_min">Tienen que quedar al menos dos jugadores.</string>
+    <string name="player_start_score">Puntaje inicial</string>
+    <string name="player_start_score_hint">por defecto %1$d</string>
     <string name="generala_servida">Servida</string>
     <string name="generala_tachar">Tachar</string>
     <string name="generala_dice">Cantidad de dados</string>
@@ -347,11 +359,15 @@
     <!-- Player setup (specific games) -->
     <string name="setup_player_count">Cantidad de jugadores</string>
     <string name="setup_player_range">Entre %1$d y %2$d</string>
+    <string name="setup_player_range_open">Desde %1$d, sin tope</string>
     <string name="setup_guest">Invitado</string>
     <string name="setup_guest_name">Jugador %1$d</string>
     <string name="setup_saved_player">Jugador guardado</string>
     <string name="setup_change">Cambiar</string>
-    <string name="setup_pick_title">Elegir jugador</string>
+    <string name="setup_pick_title">Elegir jugadores</string>
+    <string name="pick_players_hint">Tocá a todos los que juegan y confirmá.</string>
+    <string name="pick_players_hint_max">Podés elegir hasta %1$d jugadores.</string>
+    <string name="pick_players_confirm">Agregar (%1$d)</string>
     <string name="setup_new_game">Nueva partida</string>
     <string name="setup_new_game_sub">Cambiar jugadores o reglas</string>
 
@@ -371,15 +387,9 @@
     <string name="avatar">Avatar</string>
     <string name="unlock_avatars_title">Desbloquear avatares</string>
     <string name="unlock_avatars_sub">Mirá publicidades para desbloquear cada uno</string>
-    <string name="unlock_watch_button">Ver publicidad</string>
-    <string name="unlock_progress">%1$d/%2$d vistas</string>
-    <plurals name="unlock_watch_ads">
-        <item quantity="one">Mirá %1$d publicidad para desbloquear</item>
-        <item quantity="other">Mirá %1$d publicidades para desbloquear</item>
-    </plurals>
-    <string name="new_player_name_hint">Nombre del jugador</string>
+    <string name="new_player_names_hint">Nombres separados por coma</string>
     <string name="create_and_add">Crear y agregar</string>
-    <string name="or_create_new">O creá uno nuevo</string>
+    <string name="or_create_new">O creá uno o varios</string>
     <string name="config_name_label">Nombre de la configuración</string>
     <string name="favorite">Jugador frecuente</string>
     <string name="favorite_sub">Aparece primero al armar partida</string>
@@ -423,4 +433,75 @@
     <string name="feedback_bug_body">Contanos qué pasó y lo revisamos.\n\n1) JUEGO Y PANTALLA DONDE PASÓ\n\n\n2) QUÉ HICISTE, PASO A PASO\n\n\n3) QUÉ ESPERABAS QUE PASARA\n\n\n4) QUÉ PASÓ EN REALIDAD\n\n\n5) CAPTURA DE PANTALLA\nAdjuntá una a este correo si podés.\n\n</string>
     <string name="feedback_env">—\nEpic Hypernova v%1$s · %2$s · Android %3$s</string>
     <string name="feedback_no_mail_app">No encontramos una app de correo. Escribinos a %1$s</string>
+
+    <!-- Rules sheet -->
+    <string name="rules_view">Ver reglas</string>
+    <string name="rules_section_game">El juego</string>
+    <string name="rules_section_score">Cómo cargar puntajes</string>
+    <string name="rules_manos">Para juegos que se anotan por manos. Cada mano suma (o resta) puntos y la partida cierra cuando alguien llega al puntaje objetivo. En las reglas elegís si gana el mayor o el menor, si hay una cantidad fija de manos y si se declaran apuestas antes de jugarlas.</string>
+    <string name="rules_manos_score">Tocá «Cargar puntos» abajo y escribí lo que hizo cada uno en la mano. Con apuestas activadas se cargan primero las que pidió cada jugador y después las manos que ganó: suma los puntos por acierto sólo el que ganó exactamente lo que había pedido, más los extras. Tocá una mano ya cargada para corregirla.</string>
+    <string name="rules_contador">Un marcador pelado: cada vuelta sumás o restás puntos, sin manos ni apuestas. La partida cierra cuando alguien llega al objetivo y gana el mayor o el menor, según lo que hayas elegido.</string>
+    <string name="rules_contador_score">Tocá «Cargar puntos» abajo y escribí lo de cada jugador en esa vuelta; podés poner números negativos para restar. Tocá una vuelta ya cargada para corregirla.</string>
+    <string name="rules_truco">Dos equipos, Nosotros y Ellos, a 15 (sólo malas) o a 30 (malas y buenas). Los primeros 15 puntos son las malas y de ahí en adelante son las buenas. El que llega al objetivo gana el partido y queda anotado arriba.</string>
+    <string name="rules_truco_score">Tocá +1, +2 o +3 en el equipo que se lleva el tanto. También podés tocar dos veces el panel o deslizarlo hacia arriba para sumar de a uno. «− Quitar» saca un punto, «Deshacer» vuelve atrás el último movimiento y «Nuevo partido» arranca otro conservando los partidos ganados.</string>
+    <string name="rules_chinchon">Se juega a bajar y descartar. Al cerrar la mano, cada uno suma los puntos de las cartas que le quedaron: acá gana el que menos tiene y pierde el que se pasa del objetivo. Cerrar con chinchón gana la partida en el acto.</string>
+    <string name="rules_chinchon_score">Tocá «+ Sumar» en el panel del jugador y escribí los puntos que le quedaron en la mano. «Corte» le resta 10 al que cortó bien y el botón de chinchón le da la partida ganada ahí mismo. Tocá el nombre para cambiarlo o sacar a alguien de la mesa.</string>
+    <string name="rules_burako">Dos equipos a 2000 puntos. Al cerrar cada mano se cuentan las canastas, lo bajado y lo que quedó en la mano, y el primero que llega al objetivo gana.</string>
+    <string name="rules_burako_score">Tocá «+ Sumar» en el panel del equipo y escribí el total de la mano con el teclado; los botones de 200 y 100 suman rápido.</string>
+    <string name="rules_darts">Cada jugador arranca en 501 (o en el valor que hayas elegido) y le resta lo que hace en cada tirada. Gana el primero que llega exactamente a 0: si se pasa o le queda 1, la tirada no vale y queda como estaba.</string>
+    <string name="rules_darts_score">Tocá «Tirar» en el jugador al que le toca y cargá el total de los tres dardos, hasta 180. Los botones de 100, 60, 40 y 20 suman rápido. Con tres jugadores o más, tocá el nombre para cambiarlo o sacarlo.</string>
+    <string name="rules_generala">Planilla de dados: cada jugador anota una sola vez por categoría, del 1 al 6 más las figuras. La figura hecha en la primera tirada es «servida» y vale más, y la generala servida gana la partida al instante. Con todos los casilleros llenos gana el que más suma.</string>
+    <string name="rules_generala_score">Tocá el casillero del jugador y elegí el valor: en los números, cuántos dados de esa cara sacó; en las figuras, si fue armada o servida. «✕ Tachar» deja el casillero en cero cuando no se hizo nada.</string>
+    <string name="rules_bowling">Diez frames por jugador, dos tiros en cada uno. El strike (los diez pinos de una) y el spare (los diez entre los dos tiros) suman además lo que hagas en los tiros siguientes, y el frame 10 da un tiro extra si corresponde.</string>
+    <string name="rules_bowling_score">Con el teclado de abajo tocá cuántos pinos volteó el jugador del turno, tiro por tiro. El turno pasa solo cuando termina el frame y «Deshacer» corrige el último tiro.</string>
+    <string name="rules_uno">Se juega por rondas. El que se queda sin cartas gana la ronda y se lleva los puntos de las cartas que quedaron en la mano de los demás. Gana el primero que llega al puntaje objetivo.</string>
+    <string name="rules_uno_score">Tocá «Terminar ronda», elegí quién salió y cargá la mano de cada uno con los números de sus cartas: «Acción» suma 20 y «Comodín» 50. También podés ajustar a mano con − y + en cada tarjeta.</string>
+    <string name="rules_warhammer">Dos jugadores, cinco rondas de batalla. Cada uno suma puntos de victoria por el objetivo primario (hasta 50) y por los secundarios, y lleva aparte sus puntos de mando.</string>
+    <string name="rules_warhammer_score">Usá − y + en cada contador: primario, secundarios y CP. Arriba cambiás la ronda y, al confirmar la quinta, se cierra la batalla y se muestra el ganador.</string>
+    <string name="rules_poker">Acá no se anotan puntos: es el reloj de ciegas. Cada nivel dura los minutos que configures y, cuando se termina, pasa al siguiente con las ciegas más altas.</string>
+    <string name="rules_poker_score">Tocá «Empezar» para arrancar el reloj y «Pausar» para frenarlo. Con − y + vas descontando los jugadores que siguen en la mesa.</string>
+    <string name="rules_escoba">Se suma 15 con las cartas de la mesa. Al cerrar la mano se reparten los puntos: cartas (quien levantó más), oros, el 7 de oro (velo) y el setenta, más una escoba por cada vez que alguien se llevó toda la mesa.</string>
+    <string name="rules_escoba_score">Contá las escobas con − y + en la tarjeta del jugador mientras juegan. Al terminar la mano tocá «Cerrar mano» y elegí quién se llevó cada punto, o «Nadie» si quedó empatado.</string>
+    <string name="rules_mus">Dos equipos. Las piedras se suman de a una o de a dos: 5 piedras son un amarrako y 40 piedras cierran un juego. Los juegos que configures cierran una vaca, y gana el equipo que llega a las vacas pactadas.</string>
+    <string name="rules_mus_score">Tocá +1 o +2 en el equipo que se lleva el lance, «+N» para cargar varias piedras de una y «Órdago» cuando se lleva el juego entero. «↶ Deshacer» vuelve atrás el último movimiento.</string>
+
+    <!-- Dice tray -->
+    <string name="tab_dice">Dados</string>
+    <string name="dice_title">Tirar dados</string>
+    <string name="dice_count">Cuántos dados</string>
+    <string name="dice_count_sub">Hasta %1$d</string>
+    <string name="dice_label">Los dados</string>
+    <string name="dice_hint">Tocá un dado para cambiar su tipo.</string>
+    <string name="dice_pick_title">Tipo de dado</string>
+    <string name="dice_roll">Tirar</string>
+    <string name="dice_rolling">Tirando…</string>
+    <string name="dice_total">Total</string>
+
+    <!-- Confirmations, screen-on, rematch, games in play -->
+    <string name="score_reset_word">Reiniciar</string>
+    <string name="confirm_reset_title">¿Reiniciar el marcador?</string>
+    <string name="confirm_reset_text">Todos los puntajes vuelven a cero. Los jugadores se mantienen.</string>
+    <string name="confirm_new_title">¿Empezar una partida nueva?</string>
+    <string name="confirm_new_text">Se descarta la partida en curso y volvés a elegir jugadores.</string>
+    <string name="confirm_new_button">Empezar de nuevo</string>
+    <string name="confirm_finish_title">¿Terminar la partida?</string>
+    <string name="confirm_finish_text">Se guarda en el historial con el puntaje actual y se muestra el ganador.</string>
+    <string name="confirm_finish_button">Terminar</string>
+    <string name="keep_screen_on">Pantalla siempre encendida</string>
+    <string name="keep_screen_on_sub">Mientras hay un tablero abierto</string>
+    <string name="rematch">Otra partida</string>
+    <string name="menu_section_playing">En curso</string>
+    <string name="menu_resume">Tocá para retomar</string>
+    <string name="screen">Pantalla</string>
+    <string name="players_need_two">Agregá al menos dos jugadores para empezar.</string>
+    <string name="a11y_add_player">Agregar jugador</string>
+    <string name="a11y_settings">Ajustes de la partida</string>
+    <string name="a11y_remove_player">Quitar de la lista</string>
+    <string name="a11y_view_grid">Ver como mosaico</string>
+    <string name="a11y_view_list">Ver como lista</string>
+    <string name="a11y_standings">Ver posiciones</string>
+    <string name="search_empty">No hay juegos con ese nombre.</string>
+    <string name="search_clear">Borrar la búsqueda</string>
+    <string name="unlock_avatars_count">%1$d sin desbloquear</string>
+    <string name="unlock_one_ad">1 publicidad</string>
 </resources>

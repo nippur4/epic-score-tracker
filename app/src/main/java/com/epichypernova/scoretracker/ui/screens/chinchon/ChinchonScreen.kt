@@ -47,12 +47,18 @@ import com.epichypernova.scoretracker.data.model.ChinchonPlayer
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.GameEmblem
 import com.epichypernova.scoretracker.ui.components.GameIcon
+import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
 import com.epichypernova.scoretracker.ui.components.PresetChips
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -84,37 +90,48 @@ fun ChinchonScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val players = game.players
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.chinchonReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.chinchonNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.chinchonFinish(it) } }
     var addForIndex by remember { mutableIntStateOf(-1) }
+    var renameFor by remember { mutableIntStateOf(-1) }
+    var showAddPlayer by remember { mutableStateOf(false) }
 
     val bar: @Composable () -> Unit = {
-        CentralBar(game.target, onReset = { repo.update { AppActions.chinchonReset(it) } }, onConfig = { showConfig = true })
+        CentralBar(
+            game.target,
+            // The board is four rotated panes, so that's as many as fit.
+            onAddPlayer = if (players.size < 4) ({ showAddPlayer = true }) else null,
+            onReset = { askReset() },
+            onConfig = { showConfig = true },
+        )
     }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         Column(Modifier.fillMaxSize().gameInsets()) {
             when (players.size) {
                 2 -> {
-                    Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, onRename = { renameFor = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
                     bar()
-                    Pane(players[1], 1, game.target, repo, rotated = false, onAdd = { addForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    Pane(players[1], 1, game.target, repo, rotated = false, onAdd = { addForIndex = 1 }, onRename = { renameFor = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
                 3 -> {
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        Pane(players[1], 1, game.target, repo, rotated = true, onAdd = { addForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, onRename = { renameFor = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[1], 1, game.target, repo, rotated = true, onAdd = { addForIndex = 1 }, onRename = { renameFor = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                     bar()
-                    Pane(players[2], 2, game.target, repo, rotated = false, onAdd = { addForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    Pane(players[2], 2, game.target, repo, rotated = false, onAdd = { addForIndex = 2 }, onRename = { renameFor = 2 }, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
                 else -> {
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        Pane(players[1], 1, game.target, repo, rotated = true, onAdd = { addForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[0], 0, game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, onRename = { renameFor = 0 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[1], 1, game.target, repo, rotated = true, onAdd = { addForIndex = 1 }, onRename = { renameFor = 1 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                     bar()
                     Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Pane(players[2], 2, game.target, repo, rotated = false, onAdd = { addForIndex = 2 }, modifier = Modifier.weight(1f).fillMaxHeight())
-                        Pane(players[3], 3, game.target, repo, rotated = false, onAdd = { addForIndex = 3 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[2], 2, game.target, repo, rotated = false, onAdd = { addForIndex = 2 }, onRename = { renameFor = 2 }, modifier = Modifier.weight(1f).fillMaxHeight())
+                        Pane(players[3], 3, game.target, repo, rotated = false, onAdd = { addForIndex = 3 }, onRename = { renameFor = 3 }, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
@@ -132,28 +149,55 @@ fun ChinchonScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             max = 200,
         )
     }
+    if (renameFor >= 0) {
+        val idx = renameFor
+        NameEditDialog(
+            players.getOrNull(idx)?.name ?: "",
+            onSave = { n -> repo.update { AppActions.chinchonSetName(it, idx, n) } },
+            onClose = { renameFor = -1 },
+            onRemove = if (players.size > 2) ({ repo.update { AppActions.chinchonRemovePlayer(it, idx) } }) else null,
+        )
+    }
+    if (showAddPlayer) {
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { u -> players.any { it.userId == u.id } },
+            title = stringResource(R.string.add_player_title),
+            maxPick = 4 - players.size,
+            allowGuest = true,
+            startScore = 0,
+            onConfirm = { added, start -> repo.update { s -> added.fold(s) { acc, p -> AppActions.chinchonAddPlayer(acc, p, start) } } },
+            onClose = { showAddPlayer = false },
+        )
+    }
     if (showConfig) {
         ConfigSheet(
             target = game.target,
             onApply = { t -> repo.update { AppActions.chinchonSetTarget(it, t) } },
-            onNew = { repo.update { AppActions.chinchonNew(it) } },
-            onFinish = { repo.update { AppActions.chinchonFinish(it) } },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
 }
 
 @Composable
-private fun Pane(player: ChinchonPlayer, index: Int, target: Int, repo: Repository, rotated: Boolean, onAdd: () -> Unit, modifier: Modifier = Modifier) {
+private fun Pane(player: ChinchonPlayer, index: Int, target: Int, repo: Repository, rotated: Boolean, onAdd: () -> Unit, onRename: () -> Unit, modifier: Modifier = Modifier) {
     val grad = paneGradient(Color(player.color))
     val bg = Modifier.drawBehind {
         drawRect(brush = ShaderBrush(RadialGradientShader(Offset(size.width * 0.5f, size.height), size.height * 0.95f, grad, listOf(0f, 0.6f, 1f))))
     }
     Box(modifier.then(bg)) {
         Column(Modifier.fillMaxSize().rotate(if (rotated) 180f else 0f).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                Modifier.clickable { onRename() },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Box(Modifier.size(12.dp).clip(CircleShape).background(Color(player.color)).border(1.dp, Color(0x33FFFFFF), CircleShape))
                 Text(player.name.uppercase(), color = Color(player.color), style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.9.sp))
+                Text("✎", color = Palette.TextMuted, style = TextStyle(fontSize = 11.sp))
             }
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 4.dp)) {
                 Text("${player.score}", color = Color.White, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 58.sp, fontFeatureSettings = "tnum"))
@@ -183,12 +227,13 @@ private fun Chip(text: String, icon: @Composable () -> Unit, onClick: () -> Unit
 }
 
 @Composable
-private fun CentralBar(target: Int, onReset: () -> Unit, onConfig: () -> Unit) {
+private fun CentralBar(target: Int, onAddPlayer: (() -> Unit)?, onReset: () -> Unit, onConfig: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Palette.AppBgDeep).border(1.dp, Color(0x474FB35B), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(stringResource(R.string.score_target) + ": $target", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.2.sp))
+        if (onAddPlayer != null) Pill("＋", onAddPlayer)
         Pill(stringResource(R.string.score_reset), onReset)
         Pill("⚙", onConfig)
     }
@@ -211,6 +256,7 @@ private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onNew: () -> Unit, 
             SheetLabel(stringResource(R.string.score_target))
             PresetChips(listOf(50, 100, 150), t, Palette.Cyan) { t = it }
             SheetPrimaryButton(stringResource(R.string.done)) { onApply(t); onClose() }
+            RulesButton(GameType.CHINCHON)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

@@ -42,7 +42,11 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.components.LabeledCounter
 import com.epichypernova.scoretracker.ui.components.PresetChips
@@ -78,6 +82,9 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val level = game.levels[game.level.coerceIn(0, game.levels.size - 1)]
     val next = game.levels.getOrNull(game.level + 1)
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.pokerReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.pokerNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.pokerFinish(it) } }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val levelSound = rememberSoundEffect(R.raw.victory)
 
@@ -104,7 +111,7 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ) {
             GameIcon(R.drawable.ic_clock, ACCENT, 16)
             Text("${stringResource(R.string.poker_level)} ${game.level + 1}/${game.levels.size}", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
-            GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.pokerReset(it) } }
+            GamePill(stringResource(R.string.score_reset)) { askReset() }
             GamePill("⚙") { showConfig = true }
         }
 
@@ -147,8 +154,8 @@ fun PokerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ConfigSheet(
             minutes = game.levelMinutes,
             onApply = { m -> repo.update { AppActions.pokerSetMinutes(it, m, System.currentTimeMillis()) } },
-            onNew = { repo.update { AppActions.pokerNew(it) } },
-            onFinish = { repo.update { AppActions.pokerFinish(it) } },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -171,6 +178,7 @@ private fun ConfigSheet(minutes: Int, onApply: (Int) -> Unit, onNew: () -> Unit,
             SheetLabel(stringResource(R.string.poker_minutes))
             PresetChips(listOf(10, 15, 20, 30), m, ACCENT) { m = it }
             SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(m); onClose() }
+            RulesButton(GameType.POKER)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

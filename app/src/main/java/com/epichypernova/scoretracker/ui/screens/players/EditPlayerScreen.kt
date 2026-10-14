@@ -83,7 +83,12 @@ fun EditPlayerScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("✕", color = Palette.TextSecondary, modifier = Modifier.clickable { onClose() }, style = TextStyle(fontSize = 18.sp))
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).clickable(onClickLabel = stringResource(R.string.cancel)) { onClose() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("✕", color = Palette.TextSecondary, style = TextStyle(fontSize = 18.sp))
+            }
             Text(
                 if (existing == null) stringResource(R.string.new_player) else stringResource(R.string.edit_player),
                 modifier = Modifier.weight(1f).padding(horizontal = 12.dp),

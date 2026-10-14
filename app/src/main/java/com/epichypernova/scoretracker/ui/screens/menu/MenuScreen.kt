@@ -39,15 +39,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.R
-import com.epichypernova.scoretracker.data.Derivations
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.SavedConfig
+import com.epichypernova.scoretracker.data.Derivations
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.components.AppTab
 import com.epichypernova.scoretracker.ui.components.CircleIconButton
 import com.epichypernova.scoretracker.ui.components.GameLogoBox
 import com.epichypernova.scoretracker.ui.components.GameRow
+import com.epichypernova.scoretracker.ui.components.SearchField
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.TabScaffold
 import com.epichypernova.scoretracker.ui.components.cardSurface
@@ -68,14 +69,22 @@ fun MenuScreen(
     onToggleFavorite: (GameType) -> Unit,
     onDeleteConfig: (String) -> Unit,
     onToggleSection: (String) -> Unit = {},
+    onSetGrid: (Boolean) -> Unit = {},
 ) {
-    var grid by remember { mutableStateOf(false) }
+    val grid = state.settings.menuGrid
     var configToDelete by remember { mutableStateOf<SavedConfig?>(null) }
 
     // Launch a game by type, dispatching generic vs specific screens.
     val launch: (GameType) -> Unit = { gt -> if (gt.isGeneric) onStartGeneric(gt) else onOpenSpecific(gt) }
     val favoriteEntries = (GameCatalog.generics + GameCatalog.specifics)
         .filter { it.available && it.gameType in state.favoriteGames }
+
+    // Searching flattens the menu: sections get in the way when you already know the game.
+    var query by remember { mutableStateOf("") }
+    val q = query.trim().lowercase()
+    val searchable = (GameCatalog.generics + GameCatalog.specifics).filter { it.available }
+    val titles = searchable.associateWith { stringResource(it.titleRes) }
+    val matches = if (q.isEmpty()) emptyList() else searchable.filter { titles[it].orEmpty().lowercase().contains(q) }
     TabScaffold(
         selected = AppTab.JUEGOS,
         tabLabels = tabLabels,
@@ -86,7 +95,7 @@ fun MenuScreen(
                 MenuGridContent(
                     state = state,
                     padding = padding,
-                    onToggleView = { grid = false },
+                    onToggleView = { onSetGrid(false) },
                     onOpenCurrent = onOpenCurrent,
                     onStartGeneric = onStartGeneric,
                     onOpenSpecific = onOpenSpecific,
@@ -102,7 +111,31 @@ fun MenuScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                item { MenuHeader(onToggleView = { grid = true }) }
+                item { MenuHeader(onToggleView = { onSetGrid(true) }) }
+                item { SearchField(query, { query = it }, Modifier.padding(bottom = 4.dp)) }
+
+                if (q.isNotEmpty()) {
+                    if (matches.isEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.search_empty),
+                                color = Palette.TextTertiary,
+                                modifier = Modifier.padding(top = 16.dp),
+                                style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 13.sp),
+                            )
+                        }
+                    }
+                    items(matches, key = { "q_" + it.gameType.name }) { e ->
+                        GameRow(
+                            e.glyph, e.tint, titles[e].orEmpty(), stringResource(e.subtitleRes),
+                            onClick = { launch(e.gameType) },
+                            favorite = e.gameType in state.favoriteGames,
+                            onToggleFavorite = { onToggleFavorite(e.gameType) },
+                            leading = if (e.gameType.isGeneric) null else ({ GameLogoBox(e.gameType, e.tint) }),
+                        )
+                    }
+                    return@LazyColumn
+                }
 
                 if (favoriteEntries.isNotEmpty()) {
                     item { SectionLabel(stringResource(R.string.menu_section_favorites), modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)) }
@@ -117,9 +150,28 @@ fun MenuScreen(
                     }
                 }
 
-                state.currentGame?.let { game ->
+                // Every board left going, not just the generic one.
+                val inPlay = Derivations.gamesInPlay(state)
+                if (inPlay.isNotEmpty()) {
                     item {
-                        EnCursoCard(state, onOpenCurrent)
+                        SectionLabel(
+                            stringResource(R.string.menu_section_playing),
+                            color = Palette.Cyan,
+                            modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                        )
+                    }
+                    if (state.currentGame != null) {
+                        item { EnCursoCard(state, onOpenCurrent) }
+                    }
+                    items(inPlay.filterNot { it.isGeneric }, key = { "play_" + it.name }) { gt ->
+                        GameRow(
+                            GameCatalog.glyphFor(gt),
+                            GameCatalog.tintFor(gt),
+                            stringResource(GameCatalog.labelRes(gt)),
+                            stringResource(R.string.menu_resume),
+                            onClick = { launch(gt) },
+                            leading = { GameLogoBox(gt, GameCatalog.tintFor(gt)) },
+                        )
                     }
                 }
 
@@ -212,7 +264,7 @@ private fun MenuHeader(onToggleView: () -> Unit) {
             contentDescription = "Epic Hypernova",
             modifier = Modifier.width(254.dp).aspectRatio(1993f / 789f),
         )
-        CircleIconButton("▦", onToggleView)
+        CircleIconButton("▦", label = stringResource(R.string.a11y_view_grid), onClick = onToggleView)
     }
 }
 

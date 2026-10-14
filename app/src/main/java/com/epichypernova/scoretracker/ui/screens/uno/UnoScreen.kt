@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -30,9 +33,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.R
@@ -45,12 +50,20 @@ import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.MiniStep
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.PresetChips
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.Standing
+import com.epichypernova.scoretracker.ui.components.StandingsPill
+import com.epichypernova.scoretracker.ui.components.StandingsSheet
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -66,7 +79,7 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         var target by remember { mutableIntStateOf(500) }
         PlayerSetupScreen(
             repo = repo, state = state, gameType = GameType.UNO,
-            minPlayers = 2, maxPlayers = 8, defaultCount = 4, onBack = onBack,
+            minPlayers = 2, maxPlayers = null, defaultCount = 4, onBack = onBack,
             options = {
                 SheetLabel(stringResource(R.string.score_target))
                 PresetChips(listOf(200, 300, 500), target, ACCENT) { target = it }
@@ -79,7 +92,12 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
 
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.unoReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.unoNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.unoFinish(it) } }
     var showRound by remember { mutableStateOf(false) }
+    var showAdd by remember { mutableStateOf(false) }
+    var showStandings by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
@@ -90,9 +108,12 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             Text(
                 "${stringResource(R.string.uno_rounds).uppercase()} ${game.rounds} · ${stringResource(R.string.score_target).uppercase()} ${game.target}",
                 color = Palette.TextMuted, modifier = Modifier.weight(1f), maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp),
             )
-            GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.unoReset(it) } }
+            StandingsPill { showStandings = true }
+            GamePill("＋") { showAdd = true }
+            GamePill(stringResource(R.string.score_reset)) { askReset() }
             GamePill("⚙") { showConfig = true }
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -109,17 +130,43 @@ fun UnoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     }
 
     if (renameFor >= 0) {
-        NameEditDialog(players.getOrNull(renameFor)?.name ?: "", onSave = { n -> repo.update { AppActions.unoSetName(it, renameFor, n) } }, onClose = { renameFor = -1 })
+        val idx = renameFor
+        NameEditDialog(
+            players.getOrNull(idx)?.name ?: "",
+            onSave = { n -> repo.update { AppActions.unoSetName(it, idx, n) } },
+            onClose = { renameFor = -1 },
+            onRemove = if (players.size > 2) ({ repo.update { AppActions.unoRemovePlayer(it, idx) } }) else null,
+        )
+    }
+    if (showAdd) {
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { u -> players.any { it.userId == u.id } },
+            title = stringResource(R.string.add_player_title),
+            allowGuest = true,
+            startScore = 0,
+            onConfirm = { added, start -> repo.update { s -> added.fold(s) { acc, p -> AppActions.unoAddPlayer(acc, p, start) } } },
+            onClose = { showAdd = false },
+        )
     }
     if (showRound) {
         RoundSheet(players = players, onApply = { w, pts -> repo.update { AppActions.unoRound(it, w, pts) } }, onClose = { showRound = false })
+    }
+    if (showStandings) {
+        StandingsSheet(
+            entries = players.map { Standing(it.name, Color(it.color), it.score) },
+            lowWins = false,
+            accent = ACCENT,
+            onClose = { showStandings = false },
+        )
     }
     if (showConfig) {
         ConfigSheet(
             target = game.target,
             onApply = { t -> repo.update { AppActions.unoSetTarget(it, t) } },
-            onNew = { repo.update { AppActions.unoNew(it) } },
-            onFinish = { repo.update { AppActions.unoFinish(it) } },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -159,9 +206,17 @@ private fun RoundSheet(players: List<UnoPlayer>, onApply: (Int, Int) -> Unit, on
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (winner < 0) {
                 SheetLabel(stringResource(R.string.uno_who_won))
-                players.forEachIndexed { i, p ->
-                    Box(Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(999.dp)).background(Color(p.color).copy(alpha = 0.18f)).border(1.dp, Color(p.color).copy(alpha = 0.6f), RoundedCornerShape(999.dp)).clickable { winner = i }, contentAlignment = Alignment.Center) {
-                        Text(p.name, color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                // Scrolls instead of overflowing when the table is big.
+                Column(
+                    Modifier.weight(1f, fill = false)
+                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.55f).dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    players.forEachIndexed { i, p ->
+                        Box(Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(999.dp)).background(Color(p.color).copy(alpha = 0.18f)).border(1.dp, Color(p.color).copy(alpha = 0.6f), RoundedCornerShape(999.dp)).clickable { winner = i }, contentAlignment = Alignment.Center) {
+                            Text(p.name, color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                        }
                     }
                 }
             } else {
@@ -222,6 +277,7 @@ private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onNew: () -> Unit, 
             SheetLabel(stringResource(R.string.score_target))
             PresetChips(listOf(200, 300, 500), t, ACCENT) { t = it }
             SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(t); onClose() }
+            RulesButton(GameType.UNO)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

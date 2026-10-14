@@ -166,6 +166,24 @@ fun PlayersTabIcon(color: Color, size: Int = 22) {
     }
 }
 
+/** Dados: a die showing three pips. */
+@Composable
+fun DiceTabIcon(color: Color, size: Int = 22) {
+    Canvas(Modifier.size(size.dp)) {
+        val w = this.size.width; val h = this.size.height
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(0.11f * w, 0.11f * h),
+            size = androidx.compose.ui.geometry.Size(0.78f * w, 0.78f * h),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(0.2f * w, 0.2f * h),
+            style = Stroke(width = w * 0.09f),
+        )
+        listOf(0.32f to 0.32f, 0.5f to 0.5f, 0.68f to 0.68f).forEach { (x, y) ->
+            drawCircle(color, radius = w * 0.075f, center = Offset(x * w, y * h))
+        }
+    }
+}
+
 /** Ajustes: a gear. */
 @Composable
 fun SettingsTabIcon(color: Color, size: Int = 22) {

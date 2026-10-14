@@ -47,9 +47,11 @@ import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.MusTeam
 import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
@@ -58,6 +60,8 @@ import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
 import com.epichypernova.scoretracker.ui.components.gamePaneGradient
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -70,6 +74,8 @@ fun MusScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val game = state.musGame ?: return
     if (game.teams.size < 2) return
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.musReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.musFinish(it) } }
     var addFor by remember { mutableIntStateOf(-1) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
@@ -107,8 +113,8 @@ fun MusScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             juegos = game.juegosPerVaca,
             vacas = game.vacasToWin,
             onApply = { j, v -> repo.update { AppActions.musSetRules(it, j, v) } },
-            onReset = { repo.update { AppActions.musReset(it) } },
-            onFinish = { repo.update { AppActions.musFinish(it) } },
+            onReset = { askReset() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -194,6 +200,7 @@ private fun ConfigSheet(juegos: Int, vacas: Int, onApply: (Int, Int) -> Unit, on
             SheetLabel(stringResource(R.string.mus_vacas_to_win))
             Segmented(options = listOf("1", "2", "3"), selectedIndex = (v - 1).coerceIn(0, 2), onSelect = { v = it + 1 })
             SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(j, v); onClose() }
+            RulesButton(GameType.MUS)
             SheetSecondaryButton(stringResource(R.string.score_reset)) { onReset(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

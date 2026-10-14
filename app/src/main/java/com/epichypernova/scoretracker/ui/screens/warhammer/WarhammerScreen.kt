@@ -39,9 +39,11 @@ import com.epichypernova.scoretracker.R
 import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.data.model.WarhammerPlayer
 import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.LabeledCounter
 import com.epichypernova.scoretracker.ui.components.MiniStep
@@ -49,6 +51,8 @@ import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
 import com.epichypernova.scoretracker.ui.components.gamePaneGradient
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -62,6 +66,8 @@ fun WarhammerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val game = state.warhammerGame ?: return
     if (game.players.size < 2) return
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.warhammerReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.warhammerFinish(it) } }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         Column(Modifier.fillMaxSize().gameInsets()) {
@@ -78,7 +84,7 @@ fun WarhammerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
                     // On round 5 the + closes the battle and shows the winner.
                     MiniStep(if (game.round >= 5) "✓" else "+") { repo.update { AppActions.warhammerRound(it, +1) } }
                 }
-                GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.warhammerReset(it) } }
+                GamePill(stringResource(R.string.score_reset)) { askReset() }
                 GamePill("⚙") { showConfig = true }
             }
             Pane(game.players[1], 1, repo, rotated = false, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -86,7 +92,7 @@ fun WarhammerScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     }
 
     if (showConfig) {
-        ConfigSheet(onFinish = { repo.update { AppActions.warhammerFinish(it) } }, onClose = { showConfig = false })
+        ConfigSheet(onFinish = { askFinish() }, onClose = { showConfig = false })
     }
 }
 
@@ -122,6 +128,7 @@ private fun ConfigSheet(onFinish: () -> Unit, onClose: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheetState, containerColor = Palette.SheetSurface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            RulesButton(GameType.WARHAMMER)
             SheetPrimaryButton(stringResource(R.string.finish_game), ACCENT) { onFinish(); onClose() }
             SheetSecondaryButton(stringResource(R.string.cancel)) { onClose() }
         }

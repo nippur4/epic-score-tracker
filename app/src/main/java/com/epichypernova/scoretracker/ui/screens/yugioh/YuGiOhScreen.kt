@@ -55,6 +55,8 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.YuGiOhPlayer
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -98,6 +100,8 @@ fun YuGiOhScreen(
 
     var showCoin by remember { mutableStateOf(false) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.yugiohReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.yugiohFinish(it) } }
     var colorForIndex by remember { mutableIntStateOf(-1) }
     var calcForIndex by remember { mutableIntStateOf(-1) }
 
@@ -105,7 +109,7 @@ fun YuGiOhScreen(
         CentralBar(
             step = game.step,
             onStep = { s -> repo.update { AppActions.yugiohSetStep(it, s) } },
-            onReset = { repo.update { AppActions.yugiohReset(it) } },
+            onReset = { askReset() },
             onCoin = { showCoin = true },
             onConfig = { showConfig = true },
         )
@@ -151,7 +155,7 @@ fun YuGiOhScreen(
             count = players.size,
             startingLife = game.startingLife,
             onApply = { count, life -> repo.update { AppActions.yugiohConfigure(AppActions.yugiohSetLife(it, life), count) } },
-            onFinish = { repo.update { AppActions.yugiohFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

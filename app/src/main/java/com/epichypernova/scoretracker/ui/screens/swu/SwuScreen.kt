@@ -54,6 +54,8 @@ import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
 import com.epichypernova.scoretracker.ui.components.gamePaneGradient
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -67,6 +69,8 @@ fun SwuScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val game = state.swuGame ?: return
     if (game.players.size < 2) return
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.swuReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.swuFinish(it) } }
     var damageFor by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
@@ -78,7 +82,7 @@ fun SwuScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             ) {
                 GameIcon(R.drawable.ic_shield, ACCENT, 16)
                 Text("${stringResource(R.string.swu_base_hp).uppercase()} ${game.startingHp}", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.4.sp))
-                GamePill(stringResource(R.string.score_reset)) { repo.update { AppActions.swuReset(it) } }
+                GamePill(stringResource(R.string.score_reset)) { askReset() }
                 GamePill("⚙") { showConfig = true }
             }
             Pane(game.players[1], 1, repo, hasInitiative = game.initiative == 1, rotated = false, onDamage = { damageFor = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -102,7 +106,7 @@ fun SwuScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ConfigSheet(
             hp = game.startingHp,
             onApply = { v -> repo.update { AppActions.swuSetStarting(it, v) } },
-            onFinish = { repo.update { AppActions.swuFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

@@ -48,6 +48,7 @@ import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
 fun EndGameScreen(
     state: AppState,
     onDone: () -> Unit,
+    onRematch: () -> Unit,
 ) {
     val result = state.pendingResult
     if (result == null) {
@@ -117,6 +118,14 @@ fun EndGameScreen(
                 }
             }
         }
+
+        // The likeliest next move: same people, clean sheet.
+        com.epichypernova.scoretracker.ui.components.SecondaryButton(
+            text = stringResource(R.string.rematch),
+            onClick = onRematch,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            height = 48,
+        )
 
         Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.foundation.layout.Box(

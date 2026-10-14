@@ -37,6 +37,7 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.ui.components.AdsConsent
+import com.epichypernova.scoretracker.ui.components.AppToggle
 import com.epichypernova.scoretracker.ui.components.AppTab
 import com.epichypernova.scoretracker.ui.components.SecondaryButton
 import com.epichypernova.scoretracker.ui.components.Segmented
@@ -127,6 +128,30 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
                 com.epichypernova.scoretracker.ui.components.SpeakerIcon(Palette.TextPrimary, 18, waves = 2)
+            }
+
+            SectionLabel(stringResource(R.string.screen), modifier = Modifier.padding(top = 18.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.keep_screen_on),
+                        color = Palette.TextPrimary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 15.sp),
+                    )
+                    Text(
+                        stringResource(R.string.keep_screen_on_sub),
+                        color = Palette.TextTertiary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.5.sp),
+                    )
+                }
+                AppToggle(
+                    checked = state.settings.keepScreenOn,
+                    onChange = { on -> repo.update { AppActions.setKeepScreenOn(it, on) } },
+                )
             }
 
             if (privacyOptionsRequired || privacyPolicyUrl.isNotBlank()) {

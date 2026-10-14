@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -124,10 +126,10 @@ fun Stepper(
 fun StepperButton(symbol: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(44.dp)
             .clip(CircleShape)
             .border(1.dp, Palette.ButtonBorder, CircleShape)
-            .clickable { onClick() },
+            .repeatingClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(symbol, color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 18.sp))
@@ -194,14 +196,15 @@ fun SecondaryButton(
 
 /** 40dp circular icon button (menu header actions). */
 @Composable
-fun CircleIconButton(glyph: String, onClick: () -> Unit) {
+fun CircleIconButton(glyph: String, label: String? = null, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(40.dp)
+            .size(44.dp)
             .clip(CircleShape)
             .background(Palette.ControlFill)
             .border(1.dp, Palette.CardBorder, CircleShape)
-            .clickable { onClick() },
+            .clickable(onClickLabel = label) { onClick() }
+            .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Text(glyph, color = Palette.TextSecondary, style = TextStyle(fontSize = 17.sp))

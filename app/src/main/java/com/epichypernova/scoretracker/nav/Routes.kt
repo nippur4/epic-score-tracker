@@ -1,10 +1,13 @@
 package com.epichypernova.scoretracker.nav
 
+import com.epichypernova.scoretracker.data.model.GameType
+
 /** Central place for navigation route strings. */
 object Routes {
     const val MENU = "menu"                 // Juegos tab (list/grid toggle inside)
     const val HISTORY = "history"           // Historial tab
     const val PLAYERS = "players"           // Jugadores tab
+    const val DICE = "dice"                 // Dados tab
     const val SETTINGS = "settings"
 
     const val GENERIC_SETUP = "generic_setup/{gameType}"
@@ -30,6 +33,30 @@ object Routes {
     const val ESCOBA = "escoba"
     const val MUS = "mus"
     const val EDIT_PLAYER = "edit_player/{userId}"
+
+    /** The board route for a game type; the generics share the table. */
+    fun forGame(type: GameType): String = when (type) {
+        GameType.MANOS_Y_PUNTOS, GameType.CONTADOR_SIMPLE -> GENERIC_TABLE
+        GameType.TRUCO -> TRUCO
+        GameType.MAGIC -> MAGIC
+        GameType.YUGIOH -> YUGIOH
+        GameType.POKEMON -> POKEMON
+        GameType.DIGIMON -> DIGIMON
+        GameType.LORCANA -> LORCANA
+        GameType.ONEPIECE -> ONEPIECE
+        GameType.CHINCHON -> CHINCHON
+        GameType.BURAKO -> BURAKO
+        GameType.DARTS -> DARTS
+        GameType.DND -> DND
+        GameType.GENERALA -> GENERALA
+        GameType.BOWLING -> BOWLING
+        GameType.UNO -> UNO
+        GameType.WARHAMMER -> WARHAMMER
+        GameType.POKER -> POKER
+        GameType.SWU -> SWU
+        GameType.ESCOBA -> ESCOBA
+        GameType.MUS -> MUS
+    }
 
     fun genericSetup(gameType: String) = "generic_setup/$gameType"
     fun editPlayer(userId: String) = "edit_player/$userId"  // "new" to create

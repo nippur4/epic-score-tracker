@@ -1,7 +1,6 @@
 package com.epichypernova.scoretracker.ui.screens.setup
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,34 +12,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.R
-import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.GamePlayer
@@ -51,6 +40,8 @@ import com.epichypernova.scoretracker.ui.components.Avatar
 import com.epichypernova.scoretracker.ui.components.BackHeader
 import com.epichypernova.scoretracker.ui.components.ChamferCta
 import com.epichypernova.scoretracker.ui.components.GameLogoBox
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
+import com.epichypernova.scoretracker.ui.components.RulesLink
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.Stepper
 import com.epichypernova.scoretracker.ui.components.cardSurface
@@ -65,6 +56,7 @@ private val GUEST_COLORS = listOf(0xFF2FD3F0, 0xFF55E6A5, 0xFFFF6FA8, 0xFFA18AF5
  * "Nueva partida" screen shared by every specific game whose player count can vary.
  * Asks how many people play, then fills that many slots with the app's saved players
  * (favorites first), each of which can be swapped for another user, a new user or a guest.
+ * [maxPlayers] is null for the games whose board grows with the list (no ceiling).
  * [options] adds game-specific rules (target score, etc.) under the players.
  * With [countOnly] (poker's blind timer) no names are asked and [onStart] gets that many guests.
  */
@@ -74,7 +66,7 @@ fun PlayerSetupScreen(
     state: AppState,
     gameType: GameType,
     minPlayers: Int,
-    maxPlayers: Int,
+    maxPlayers: Int?,
     defaultCount: Int,
     onBack: () -> Unit,
     onStart: (List<GamePlayer>) -> Unit,
@@ -84,16 +76,29 @@ fun PlayerSetupScreen(
     val guestFmt = stringResource(R.string.setup_guest_name)
     fun guest(i: Int) = GamePlayer(String.format(guestFmt, i + 1), GUEST_COLORS[i % GUEST_COLORS.size])
 
-    var count by remember { mutableIntStateOf(defaultCount.coerceIn(minPlayers, maxPlayers)) }
+    val cap = maxPlayers ?: Int.MAX_VALUE
+    var count by remember { mutableIntStateOf(defaultCount.coerceIn(minPlayers, cap)) }
+    // Seats start empty: nobody is put in the game until the person says who's playing.
     val slots = remember {
-        val ordered = state.users.sortedByDescending { it.favorite }
-        (0 until maxPlayers).map { i ->
-            ordered.getOrNull(i)?.let { GamePlayer(it.name, it.color, it.id) } ?: guest(i)
-        }.toMutableStateList()
+        (0 until defaultCount.coerceIn(minPlayers, cap)).map { guest(it) }.toMutableStateList()
     }
     var pickFor by remember { mutableIntStateOf(-1) }
     val adGate = rememberAdGate(repo, state)
     val tint = GameCatalog.tintFor(gameType)
+
+    /** Grows the slot list until it holds [n] seats. */
+    fun grow(n: Int) {
+        while (slots.size < n) slots.add(guest(slots.size))
+    }
+
+    /** Puts [p] in [slot], turning any spare slot that held the same saved player into a guest. */
+    fun assign(slot: Int, p: GamePlayer) {
+        grow(slot + 1)
+        if (p.userId != null) {
+            slots.indices.forEach { j -> if (j != slot && slots[j].userId == p.userId) slots[j] = guest(j) }
+        }
+        slots[slot] = p
+    }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBg)) {
         BackHeader(
@@ -117,17 +122,28 @@ fun PlayerSetupScreen(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.setup_player_count), color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 15.sp))
-                    Text(stringResource(R.string.setup_player_range, minPlayers, maxPlayers), color = Palette.TextTertiary, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.5.sp))
+                    Text(
+                        if (maxPlayers != null) stringResource(R.string.setup_player_range, minPlayers, maxPlayers)
+                        else stringResource(R.string.setup_player_range_open, minPlayers),
+                        color = Palette.TextTertiary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.5.sp),
+                    )
                 }
-                Stepper(count, onDec = { count = (count - 1).coerceAtLeast(minPlayers) }, onInc = { count = (count + 1).coerceAtMost(maxPlayers) })
+                Stepper(
+                    count,
+                    onDec = { count = (count - 1).coerceAtLeast(minPlayers) },
+                    onInc = { count = (count + 1).coerceAtMost(cap).also { grow(it) } },
+                )
             }
+
+            RulesLink(gameType)
 
             // Who plays
             if (!countOnly) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionLabel(stringResource(R.string.players_label))
                     (0 until count).forEach { i ->
-                        val p = slots[i]
+                        val p = slots.getOrNull(i) ?: guest(i)
                         val user = p.userId?.let { id -> state.users.firstOrNull { it.id == id } }
                         SlotRow(index = i, player = p, user = user, onClick = { pickFor = i })
                     }
@@ -149,6 +165,7 @@ fun PlayerSetupScreen(
             ChamferCta(
                 text = stringResource(R.string.start_game),
                 onClick = {
+                    if (!countOnly) grow(count)
                     val players = if (countOnly) (0 until count).map(::guest) else slots.take(count)
                     adGate { onStart(players) }
                 },
@@ -159,14 +176,28 @@ fun PlayerSetupScreen(
 
     if (pickFor >= 0) {
         val idx = pickFor
-        val taken = (0 until count).filter { it != idx }.mapNotNull { slots[it].userId }.toSet()
-        PickPlayerDialog(
+        val taken = (0 until count).filter { it != idx }.mapNotNull { slots.getOrNull(it)?.userId }.toSet()
+        // Seats a batch can land on: this one, the empty ones after it, and whatever room is left.
+        val emptyAfter = ((idx + 1) until count).count { slots.getOrNull(it)?.userId == null }
+        PickPlayersDialog(
             repo = repo,
             state = state,
-            available = state.users.filterNot { it.id in taken },
-            currentUserId = slots[idx].userId,
-            onPickUser = { u -> slots[idx] = GamePlayer(u.name, u.color, u.id) },
-            onPickGuest = { slots[idx] = guest(idx) },
+            candidates = state.users.filterNot { it.id in taken },
+            title = stringResource(R.string.setup_pick_title),
+            maxPick = maxPlayers?.let { 1 + emptyAfter + (it - count).coerceAtLeast(0) },
+            highlightedId = slots.getOrNull(idx)?.userId,
+            allowGuest = true,
+            onConfirm = { picked, _ ->
+                // The first one takes the seat that was tapped; the rest fill the empty seats
+                // after it, and only add new ones once there are none left.
+                var slot = idx
+                picked.forEach { p ->
+                    if (slot >= cap) return@forEach
+                    assign(slot, if (p.userId == null) guest(slot) else p)
+                    if (slot >= count) count = slot + 1
+                    slot = ((slot + 1) until count).firstOrNull { slots.getOrNull(it)?.userId == null } ?: count
+                }
+            },
             onClose = { pickFor = -1 },
         )
     }
@@ -193,91 +224,3 @@ private fun SlotRow(index: Int, player: GamePlayer, user: User?, onClick: () -> 
     }
 }
 
-/** Pick a saved user for a slot, mark it as a guest, or create a new user on the spot. */
-@Composable
-private fun PickPlayerDialog(
-    repo: Repository,
-    state: AppState,
-    available: List<User>,
-    currentUserId: String?,
-    onPickUser: (User) -> Unit,
-    onPickGuest: () -> Unit,
-    onClose: () -> Unit,
-) {
-    var newName by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onClose,
-        confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.cancel), color = Palette.TextSecondary) } },
-        title = { Text(stringResource(R.string.setup_pick_title), color = Palette.TextPrimary) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                available.forEach { u ->
-                    val active = u.id == currentUserId
-                    Row(
-                        Modifier.fillMaxWidth().clickable { onPickUser(u); onClose() }.padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Avatar(u.name, Color(u.color), size = 32, fontSize = 15, avatarId = u.avatarId)
-                        Text(u.name, color = if (active) Palette.Cyan else Palette.TextPrimary, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                        if (u.favorite) Text("★", color = Palette.TextMuted, style = TextStyle(fontSize = 13.sp))
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().clickable { onPickGuest(); onClose() }.padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.size(32.dp).clip(CircleShape).border(1.dp, Palette.ButtonBorder, CircleShape), contentAlignment = Alignment.Center) {
-                        Text("?", color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
-                    }
-                    Text(stringResource(R.string.setup_guest), color = Palette.TextSecondary, modifier = Modifier.padding(start = 12.dp))
-                }
-
-                // Create a new player without leaving this screen
-                Text(
-                    stringResource(R.string.or_create_new),
-                    color = Palette.TextTertiary,
-                    style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.2.sp),
-                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-                )
-                Row(
-                    Modifier.fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Palette.ControlFill)
-                        .border(1.dp, Palette.CardBorder, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.weight(1f)) {
-                        if (newName.isEmpty()) {
-                            Text(stringResource(R.string.new_player_name_hint), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp))
-                        }
-                        BasicTextField(
-                            value = newName,
-                            onValueChange = { newName = it },
-                            singleLine = true,
-                            textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp, color = Palette.TextPrimary),
-                            cursorBrush = SolidColor(Palette.Cyan),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-                Box(
-                    Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(999.dp))
-                        .background(if (newName.isBlank()) Palette.Cyan.copy(alpha = 0.4f) else Palette.Cyan)
-                        .clickable(enabled = newName.isNotBlank()) {
-                            val color = GUEST_COLORS[state.users.size % GUEST_COLORS.size]
-                            val user = User(AppActions.newId("u"), newName.trim(), color)
-                            repo.update { AppActions.addExistingUser(it, user) }
-                            onPickUser(user)
-                            onClose()
-                        }
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(stringResource(R.string.create_and_add), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp))
-                }
-            }
-        },
-        containerColor = Palette.SheetSurface,
-    )
-}

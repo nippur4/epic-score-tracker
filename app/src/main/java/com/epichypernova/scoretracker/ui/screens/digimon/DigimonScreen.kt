@@ -50,6 +50,8 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.DigimonPlayer
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.theme.Orbitron
@@ -82,6 +84,8 @@ fun DigimonScreen(
     if (players.size < 2) return
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.digimonReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.digimonFinish(it) } }
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
@@ -93,7 +97,7 @@ fun DigimonScreen(
                 bottomColor = Color(players[1].color),
                 onSet = { v -> repo.update { AppActions.digimonSetMemory(it, v) } },
                 onNudge = { d -> repo.update { AppActions.digimonMemory(it, d) } },
-                onReset = { repo.update { AppActions.digimonReset(it) } },
+                onReset = { askReset() },
                 onConfig = { showConfig = true },
             )
             DigimonPane(players[1], 1, game.startingSecurity, repo, rotated = false, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -104,7 +108,7 @@ fun DigimonScreen(
         DigimonConfigSheet(
             startingSecurity = game.startingSecurity,
             onApply = { sec -> repo.update { AppActions.digimonSetSecurity(it, sec) } },
-            onFinish = { repo.update { AppActions.digimonFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

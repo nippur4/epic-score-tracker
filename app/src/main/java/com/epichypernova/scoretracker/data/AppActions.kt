@@ -18,6 +18,7 @@ import com.epichypernova.scoretracker.data.model.BurakoTeam
 import com.epichypernova.scoretracker.data.model.ChinchonGame
 import com.epichypernova.scoretracker.data.model.ChinchonPlayer
 import com.epichypernova.scoretracker.data.model.DartsGame
+import com.epichypernova.scoretracker.data.model.DiceTray
 import com.epichypernova.scoretracker.data.model.DartsPlayer
 import com.epichypernova.scoretracker.data.model.DndAbility
 import com.epichypernova.scoretracker.data.model.DndAttack
@@ -194,6 +195,35 @@ object AppActions {
         return s.copy(currentGame = putRound(game, Round(roundIndex, cells)))
     }
 
+    /**
+     * Adds players to the game already in progress. Each one joins with [startScore] points
+     * (the hands played before they arrived simply have no cell for them).
+     */
+    fun genericAddPlayers(s: AppState, userIds: List<String>, startScore: Int): AppState {
+        val game = s.currentGame ?: return s
+        val fresh = userIds.filterNot { it in game.playerIds }
+        if (fresh.isEmpty()) return s
+        return s.copy(
+            currentGame = game.copy(
+                playerIds = game.playerIds + fresh,
+                startScores = game.startScores + fresh.associateWith { startScore },
+            ),
+        )
+    }
+
+    /** Drops a player from the game in progress, along with everything they had scored. */
+    fun genericRemovePlayer(s: AppState, userId: String): AppState {
+        val game = s.currentGame ?: return s
+        if (game.playerIds.size <= 2 || userId !in game.playerIds) return s
+        return s.copy(
+            currentGame = game.copy(
+                playerIds = game.playerIds - userId,
+                startScores = game.startScores - userId,
+                rounds = game.rounds.map { r -> r.copy(cells = r.cells.filterNot { it.playerId == userId }) },
+            ),
+        )
+    }
+
     /** Finalises the current generic game: builds the result, records history, clears the game. */
     fun finishGeneric(s: AppState): AppState {
         val game = s.currentGame ?: return s
@@ -214,6 +244,7 @@ object AppActions {
             winnerNames = winnerNames,
             summary = summary,
             finishedAt = System.currentTimeMillis(),
+            lines = lines,
         )
         val bumpedUsers = s.users.map {
             if (it.id in game.playerIds) it.copy(gamesPlayed = it.gamesPlayed + 1) else it
@@ -222,12 +253,77 @@ object AppActions {
             users = bumpedUsers,
             currentGame = null,
             history = listOf(entry) + s.history,
-            pendingResult = GameResult(game.gameType, title, winnerNames, lines, summary),
+            pendingResult = GameResult(
+                game.gameType, title, winnerNames, lines, summary,
+                rematchGame = game.copy(rounds = emptyList(), startScores = emptyMap()),
+            ),
         )
     }
 
     /** Dismisses the winner screen. */
     fun clearResult(s: AppState): AppState = s.copy(pendingResult = null)
+
+    /**
+     * Plays the same game again from the winner screen: same players, scores back to zero.
+     * The generic table rebuilds from [GameResult.rematchGame]; truco lands on its 15/30
+     * chooser, because finishing a truco session drops the match.
+     */
+    fun rematch(s: AppState): AppState {
+        val result = s.pendingResult ?: return s
+        val base = s.copy(pendingResult = null)
+        result.rematchGame?.let { g ->
+            return base.copy(currentGame = g.copy(id = newId("g"), startedAt = System.currentTimeMillis()))
+        }
+        return when (result.gameType) {
+            GameType.MAGIC -> magicReset(base)
+            GameType.YUGIOH -> yugiohReset(base)
+            GameType.POKEMON -> pokemonReset(base)
+            GameType.DIGIMON -> digimonReset(base)
+            GameType.LORCANA -> lorcanaReset(base)
+            GameType.ONEPIECE -> onePieceReset(base)
+            GameType.CHINCHON -> chinchonReset(base)
+            GameType.BURAKO -> burakoReset(base)
+            GameType.DARTS -> dartsReset(base)
+            GameType.DND -> dndReset(base)
+            GameType.GENERALA -> generalaReset(base)
+            GameType.BOWLING -> bowlingReset(base)
+            GameType.UNO -> unoReset(base)
+            GameType.WARHAMMER -> warhammerReset(base)
+            GameType.POKER -> pokerReset(base)
+            GameType.SWU -> swuReset(base)
+            GameType.ESCOBA -> escobaReset(base)
+            GameType.MUS -> musReset(base)
+            else -> base
+        }
+    }
+
+    // ---------- Dice tray ----------
+
+    /** The polyhedrals the tray offers. */
+    val DICE_KINDS = listOf(4, 6, 8, 10, 12, 20, 100)
+
+    /** Most dice the tray holds. */
+    const val DICE_MAX = 5
+
+    /** Kind a freshly added die starts on. */
+    const val DICE_DEFAULT = 6
+
+    /** Adds or drops dice at the end, keeping the kinds already picked. New dice start on a d6. */
+    fun diceSetCount(s: AppState, count: Int): AppState {
+        val n = count.coerceIn(1, DICE_MAX)
+        val sides = s.dice.sides
+        val next = if (n <= sides.size) sides.take(n) else sides + List(n - sides.size) { DICE_DEFAULT }
+        return s.copy(dice = DiceTray(next))
+    }
+
+    /** Changes one die's kind. Results are dropped so what's shown always matches the dice. */
+    fun diceSetKind(s: AppState, index: Int, sides: Int): AppState {
+        if (index !in s.dice.sides.indices || sides !in DICE_KINDS) return s
+        return s.copy(dice = DiceTray(s.dice.sides.mapIndexed { i, v -> if (i == index) sides else v }))
+    }
+
+    fun diceRoll(s: AppState): AppState =
+        s.copy(dice = s.dice.copy(results = s.dice.sides.map { (1..it).random() }))
 
     /**
      * Records a finished specific game: prepends [entry] to the history and bumps `gamesPlayed`
@@ -241,6 +337,10 @@ object AppActions {
 
     /** Guest fallback used when a setup screen hands over fewer players than a game needs. */
     private fun guest(i: Int, palette: List<Long>) = GamePlayer("Jugador ${i + 1}", palette[i % palette.size])
+
+    /** [player] as handed over, or the numbered guest for slot [i] when it carries no name. */
+    private fun namedOrGuest(player: GamePlayer, i: Int, palette: List<Long>) =
+        if (player.name.isBlank()) guest(i, palette) else player
 
     // ---------- Truco ----------
 
@@ -266,7 +366,7 @@ object AppActions {
             ResultLine(themName, m.them.gamesWon.toString(), 0xFFE24BD6, themName in winners),
         )
         val summary = "$usName ${m.us.gamesWon} - ${m.them.gamesWon} $themName"
-        val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), winners, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), winners, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(trucoMatch = null, history = listOf(entry) + s.history, pendingResult = GameResult(GameType.TRUCO, "Truco", winners, lines, summary))
     }
 
@@ -296,7 +396,7 @@ object AppActions {
                 ResultLine(themName, themSide.gamesWon.toString(), 0xFFE24BD6, !winnerUs),
             )
             val summary = "$usName ${usSide.gamesWon} - ${themSide.gamesWon} $themName"
-            val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), listOf(wName), summary, System.currentTimeMillis())
+            val entry = HistoryEntry(newId("h"), GameType.TRUCO, emptyList(), listOf(usName, themName), listOf(wName), summary, System.currentTimeMillis(), lines = lines)
             ns = ns.copy(
                 trucoMatch = ns.trucoMatch?.copy(chooseTarget = true),
                 history = listOf(entry) + ns.history,
@@ -389,7 +489,7 @@ object AppActions {
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
         val label = if (g.commander) "Commander" else "Magic ${g.players.size}p"
         val summary = "$label · $wName"
-        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             magicGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -427,7 +527,7 @@ object AppActions {
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
         val label = if (g.commander) "Commander" else "Magic ${g.players.size}p"
         val summary = "$label · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.MAGIC, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             magicGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -520,7 +620,7 @@ object AppActions {
         val wName = winner?.name ?: "—"
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
         val summary = "Yu-Gi-Oh! ${g.players.size}p · $wName"
-        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             yugiohGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -537,7 +637,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
         val summary = "Yu-Gi-Oh! ${g.players.size}p · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.YUGIOH, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             yugiohGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -626,7 +726,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, "${g.startingPrizes - it.prizes}/${g.startingPrizes}", it.color, it in winners) }
         val summary = "Pokémon TCG · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             pokemonGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -642,7 +742,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, "${g.startingPrizes - it.prizes}/${g.startingPrizes}", it.color, it in winners) }
         val summary = "Pokémon TCG · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.POKEMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             pokemonGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -721,7 +821,7 @@ object AppActions {
         val wName = winner?.name ?: "—"
         val lines = g.players.map { ResultLine(it.name, it.security.toString(), it.color, it == winner) }
         val summary = "Digimon · $wName"
-        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             digimonGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -737,7 +837,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.security.toString(), it.color, it in winners) }
         val summary = "Digimon · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.DIGIMON, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             digimonGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -803,7 +903,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, "${it.lore}/${g.targetLore}", it.color, it in winners) }
         val summary = "Lorcana · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             lorcanaGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -819,7 +919,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, "${it.lore}/${g.targetLore}", it.color, it in winners) }
         val summary = "Lorcana · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.LORCANA, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             lorcanaGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -890,7 +990,7 @@ object AppActions {
         val wName = winner?.name ?: "—"
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it == winner) }
         val summary = "One Piece · $wName"
-        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, listOfNotNull(winner?.name), summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             onePieceGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -906,7 +1006,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.life.toString(), it.color, it in winners) }
         val summary = "One Piece · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.ONEPIECE, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(
             onePieceGame = g.copy(finished = true),
             history = listOf(entry) + s.history,
@@ -928,7 +1028,7 @@ object AppActions {
 
     /** Starts a game with the players chosen on the setup screen (2..4). */
     fun chinchonStart(s: AppState, players: List<GamePlayer>, target: Int = 100): AppState {
-        val n = players.size.coerceIn(2, 4)
+        val n = players.size.coerceAtLeast(2)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, chinchonPalette)
             ChinchonPlayer(name = p.name, color = p.color, userId = p.userId)
@@ -939,9 +1039,27 @@ object AppActions {
     /** Drops the current game so the next open goes through the setup screen again. */
     fun chinchonNew(s: AppState): AppState = s.copy(chinchonGame = null)
 
+    /** Sits a player down mid-game with [score] points already on them. */
+    fun chinchonAddPlayer(s: AppState, player: GamePlayer, score: Int): AppState {
+        val g = s.chinchonGame ?: return s
+        val p = namedOrGuest(player, g.players.size, chinchonPalette)
+        return s.copy(chinchonGame = g.copy(players = g.players + ChinchonPlayer(p.name, p.color, score.coerceAtLeast(0), p.userId)))
+    }
+
+    fun chinchonRemovePlayer(s: AppState, index: Int): AppState {
+        val g = s.chinchonGame ?: return s
+        if (g.players.size <= 2 || index !in g.players.indices) return s
+        return s.copy(chinchonGame = g.copy(players = g.players.filterIndexed { i, _ -> i != index }))
+    }
+
     fun chinchonSetTarget(s: AppState, target: Int): AppState {
         val g = s.chinchonGame ?: return s
         return s.copy(chinchonGame = g.copy(target = target.coerceAtLeast(1)))
+    }
+
+    fun chinchonSetName(s: AppState, index: Int, name: String): AppState {
+        val g = s.chinchonGame ?: return s
+        return s.copy(chinchonGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index && name.isNotBlank()) p.copy(name = name.trim()) else p }))
     }
 
     fun chinchonSetColor(s: AppState, index: Int, color: Long): AppState {
@@ -980,7 +1098,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
         val summary = "Chinchón · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.CHINCHON, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.CHINCHON, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(chinchonGame = g.copy(finished = true), pendingResult = GameResult(GameType.CHINCHON, "Chinchón", wNames, lines, summary))
     }
 
@@ -1027,7 +1145,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.teams.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
         val summary = "Burako · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(burakoGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.BURAKO, "Burako", wNames, lines, summary))
     }
 
@@ -1038,7 +1156,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.teams.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
         val summary = "Burako · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.BURAKO, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(burakoGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.BURAKO, "Burako", wNames, lines, summary))
     }
 
@@ -1054,7 +1172,7 @@ object AppActions {
     /** Starts a game for the chosen players (2..8), everyone at [startScore]. */
     fun dartsStart(s: AppState, players: List<GamePlayer>, startScore: Int = 501): AppState {
         val start = startScore.coerceAtLeast(2)
-        val n = players.size.coerceIn(2, 8)
+        val n = players.size.coerceAtLeast(2)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, dartsPalette)
             DartsPlayer(name = p.name, color = p.color, remaining = start, userId = p.userId)
@@ -1064,10 +1182,28 @@ object AppActions {
 
     fun dartsNew(s: AppState): AppState = s.copy(dartsGame = null)
 
+    /** Adds a player mid-game with [remaining] left to throw down (never below 2). */
+    fun dartsAddPlayer(s: AppState, player: GamePlayer, remaining: Int): AppState {
+        val g = s.dartsGame ?: return s
+        val p = namedOrGuest(player, g.players.size, dartsPalette)
+        return s.copy(dartsGame = g.copy(players = g.players + DartsPlayer(p.name, p.color, remaining.coerceAtLeast(2), p.userId)))
+    }
+
+    fun dartsRemovePlayer(s: AppState, index: Int): AppState {
+        val g = s.dartsGame ?: return s
+        if (g.players.size <= 2 || index !in g.players.indices) return s
+        return s.copy(dartsGame = g.copy(players = g.players.filterIndexed { i, _ -> i != index }))
+    }
+
     fun dartsSetStart(s: AppState, startScore: Int): AppState {
         val g = s.dartsGame ?: return s
         val start = startScore.coerceAtLeast(2)
         return s.copy(dartsGame = g.copy(startScore = start, finished = false, players = g.players.map { it.copy(remaining = start) }))
+    }
+
+    fun dartsSetName(s: AppState, index: Int, name: String): AppState {
+        val g = s.dartsGame ?: return s
+        return s.copy(dartsGame = g.copy(players = g.players.mapIndexed { i, p -> if (i == index && name.isNotBlank()) p.copy(name = name.trim()) else p }))
     }
 
     fun dartsSetColor(s: AppState, index: Int, color: Long): AppState {
@@ -1099,7 +1235,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.sortedBy { it.remaining }.map { ResultLine(it.name, it.remaining.toString(), it.color, it in winners) }
         val summary = "Dardos ${g.startScore} · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.DARTS, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.DARTS, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(dartsGame = g.copy(finished = true), pendingResult = GameResult(GameType.DARTS, "Dardos", wNames, lines, summary))
     }
 
@@ -1285,7 +1421,7 @@ object AppActions {
         val wNames = alive.map { it.name }
         val lines = g.characters.map { ResultLine(it.name, "${it.hp}/${it.maxHp}", it.color, it in alive) }
         val summary = "D&D · Ronda ${g.round} · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.DND, g.characters.mapNotNull { it.userId }, g.characters.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.DND, g.characters.mapNotNull { it.userId }, g.characters.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(dndGame = g.copy(finished = true), pendingResult = GameResult(GameType.DND, "D&D", wNames, lines, summary))
     }
 
@@ -1293,11 +1429,9 @@ object AppActions {
 
     private val multiPalette = listOf(0xFF2FD3F0, 0xFF55E6A5, 0xFFFF6FA8, 0xFFA18AF5, 0xFF3B7BF7, 0xFFF27BA9, 0xFFFF8C42, 0xFFF2B33B)
 
-    private const val MULTI_MAX = 20
-
-    /** Starts a scoresheet for the chosen players (1..20). */
+    /** Starts a scoresheet for the chosen players. */
     fun generalaStart(s: AppState, players: List<GamePlayer>): AppState {
-        val n = players.size.coerceIn(1, MULTI_MAX)
+        val n = players.size.coerceAtLeast(1)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, multiPalette)
             GeneralaPlayer(name = p.name, color = p.color, userId = p.userId)
@@ -1307,11 +1441,11 @@ object AppActions {
 
     fun generalaNew(s: AppState): AppState = s.copy(generalaGame = null)
 
-    fun generalaAddPlayer(s: AppState): AppState {
+    /** Adds a player to the scoresheet mid-game; their categories all start empty. */
+    fun generalaAddPlayer(s: AppState, player: GamePlayer = GamePlayer("", 0L)): AppState {
         val g = s.generalaGame ?: return s
-        if (g.players.size >= MULTI_MAX) return s
-        val i = g.players.size
-        return s.copy(generalaGame = g.copy(players = g.players + GeneralaPlayer("Jugador ${i + 1}", multiPalette[i % multiPalette.size])))
+        val p = namedOrGuest(player, g.players.size, multiPalette)
+        return s.copy(generalaGame = g.copy(players = g.players + GeneralaPlayer(p.name, p.color, userId = p.userId)))
     }
 
     fun generalaRemovePlayer(s: AppState, index: Int): AppState {
@@ -1359,7 +1493,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, generalaTotal(it).toString(), it.color, it in winners) }
         val summary = "Generala · " + wNames.joinToString("/") + if (forcedWinner != null) " (servida)" else ""
-        val entry = HistoryEntry(newId("h"), GameType.GENERALA, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.GENERALA, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(generalaGame = g.copy(finished = true), pendingResult = GameResult(GameType.GENERALA, "Generala", wNames, lines, summary))
     }
 
@@ -1370,9 +1504,9 @@ object AppActions {
 
     // ---------- Bowling ----------
 
-    /** Starts a game for the chosen players (1..20). */
+    /** Starts a game for the chosen players. */
     fun bowlingStart(s: AppState, players: List<GamePlayer>): AppState {
-        val n = players.size.coerceIn(1, MULTI_MAX)
+        val n = players.size.coerceAtLeast(1)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, multiPalette)
             BowlingPlayer(name = p.name, color = p.color, userId = p.userId)
@@ -1382,11 +1516,11 @@ object AppActions {
 
     fun bowlingNew(s: AppState): AppState = s.copy(bowlingGame = null)
 
-    fun bowlingAddPlayer(s: AppState): AppState {
+    /** Adds a player to the lane mid-game; they start with no rolls thrown. */
+    fun bowlingAddPlayer(s: AppState, player: GamePlayer = GamePlayer("", 0L)): AppState {
         val g = s.bowlingGame ?: return s
-        if (g.players.size >= MULTI_MAX) return s
-        val i = g.players.size
-        return s.copy(bowlingGame = g.copy(players = g.players + BowlingPlayer("Jugador ${i + 1}", multiPalette[i % multiPalette.size]), finished = false))
+        val p = namedOrGuest(player, g.players.size, multiPalette)
+        return s.copy(bowlingGame = g.copy(players = g.players + BowlingPlayer(p.name, p.color, userId = p.userId), finished = false))
     }
 
     /** Removes a player and drops their rolls from the undo log, keeping the turn on a valid player. */
@@ -1443,7 +1577,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.mapIndexed { i, p -> ResultLine(p.name, totals[i].toString(), p.color, p in winners) }
         val summary = "Bowling · " + wNames.joinToString("/") + " ($best)"
-        val entry = HistoryEntry(newId("h"), GameType.BOWLING, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.BOWLING, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(bowlingGame = g.copy(finished = true), pendingResult = GameResult(GameType.BOWLING, "Bowling", wNames, lines, summary))
     }
 
@@ -1454,9 +1588,9 @@ object AppActions {
 
     // ---------- Uno ----------
 
-    /** Starts a game for the chosen players (2..8). */
+    /** Starts a game for the chosen players. */
     fun unoStart(s: AppState, players: List<GamePlayer>, target: Int = 500): AppState {
-        val n = players.size.coerceIn(2, 8)
+        val n = players.size.coerceAtLeast(2)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, multiPalette)
             UnoPlayer(name = p.name, color = p.color, userId = p.userId)
@@ -1465,6 +1599,19 @@ object AppActions {
     }
 
     fun unoNew(s: AppState): AppState = s.copy(unoGame = null)
+
+    /** Deals a player in mid-game with [score] points already counted. */
+    fun unoAddPlayer(s: AppState, player: GamePlayer, score: Int): AppState {
+        val g = s.unoGame ?: return s
+        val p = namedOrGuest(player, g.players.size, multiPalette)
+        return s.copy(unoGame = g.copy(players = g.players + UnoPlayer(p.name, p.color, score.coerceAtLeast(0), p.userId)))
+    }
+
+    fun unoRemovePlayer(s: AppState, index: Int): AppState {
+        val g = s.unoGame ?: return s
+        if (g.players.size <= 2 || index !in g.players.indices) return s
+        return s.copy(unoGame = g.copy(players = g.players.filterIndexed { i, _ -> i != index }))
+    }
 
     fun unoSetTarget(s: AppState, target: Int): AppState {
         val g = s.unoGame ?: return s
@@ -1496,7 +1643,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
         val summary = "Uno · " + wNames.joinToString("/") + " ($best)"
-        val entry = HistoryEntry(newId("h"), GameType.UNO, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.UNO, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(unoGame = g.copy(finished = true), pendingResult = GameResult(GameType.UNO, "Uno", wNames, lines, summary))
     }
 
@@ -1548,7 +1695,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, "${warhammerTotal(it)} VP", it.color, it in winners) }
         val summary = "Warhammer 40k · " + wNames.joinToString("/") + " ($best VP)"
-        val entry = HistoryEntry(newId("h"), GameType.WARHAMMER, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.WARHAMMER, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(warhammerGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.WARHAMMER, "Warhammer 40k", wNames, lines, summary))
     }
 
@@ -1610,12 +1757,12 @@ object AppActions {
         val g = s.pokerGame ?: return s
         val lv = g.levels[g.level.coerceIn(0, g.levels.size - 1)]
         val summary = "Póker · nivel ${g.level + 1} (${lv.small}/${lv.big})"
-        val entry = HistoryEntry(newId("h"), GameType.POKER, emptyList(), emptyList(), emptyList(), summary, System.currentTimeMillis())
         val lines = listOf(
             ResultLine("Ciegas", "${lv.small}/${lv.big}", 0xFF29A86B),
             ResultLine("Nivel", "${g.level + 1}", 0xFF29A86B),
             ResultLine("Jugadores", "${g.playersLeft}", 0xFF29A86B),
         )
+        val entry = HistoryEntry(newId("h"), GameType.POKER, emptyList(), emptyList(), emptyList(), summary, System.currentTimeMillis(), lines = lines)
         return s.copy(pokerGame = g.copy(running = false, finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.POKER, "Póker", emptyList(), lines, summary))
     }
 
@@ -1664,7 +1811,7 @@ object AppActions {
             val winner = marked[1 - loser]
             val lines = marked.map { ResultLine(it.name, it.hp.toString(), it.color, it == winner) }
             val summary = "Star Wars Unlimited · ${winner.name}"
-            val entry = HistoryEntry(newId("h"), GameType.SWU, emptyList(), marked.map { it.name }, listOf(winner.name), summary, System.currentTimeMillis())
+            val entry = HistoryEntry(newId("h"), GameType.SWU, emptyList(), marked.map { it.name }, listOf(winner.name), summary, System.currentTimeMillis(), lines = lines)
             s.copy(swuGame = g.copy(players = marked, finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.SWU, "Star Wars Unlimited", listOf(winner.name), lines, summary))
         } else s.copy(swuGame = g.copy(players = players))
     }
@@ -1676,7 +1823,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.hp.toString(), it.color, it in winners) }
         val summary = "Star Wars Unlimited · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.SWU, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.SWU, emptyList(), g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(swuGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.SWU, "Star Wars Unlimited", wNames, lines, summary))
     }
 
@@ -1687,9 +1834,9 @@ object AppActions {
 
     // ---------- Escoba de 15 ----------
 
-    /** Starts a game for the chosen players (2..4). */
+    /** Starts a game for the chosen players. */
     fun escobaStart(s: AppState, players: List<GamePlayer>, target: Int = 15): AppState {
-        val n = players.size.coerceIn(2, 4)
+        val n = players.size.coerceAtLeast(2)
         val ps = (0 until n).map { i ->
             val p = players.getOrNull(i) ?: guest(i, multiPalette)
             EscobaPlayer(name = p.name, color = p.color, userId = p.userId)
@@ -1698,6 +1845,19 @@ object AppActions {
     }
 
     fun escobaNew(s: AppState): AppState = s.copy(escobaGame = null)
+
+    /** Sits a player down mid-game with [score] points already counted. */
+    fun escobaAddPlayer(s: AppState, player: GamePlayer, score: Int): AppState {
+        val g = s.escobaGame ?: return s
+        val p = namedOrGuest(player, g.players.size, multiPalette)
+        return s.copy(escobaGame = g.copy(players = g.players + EscobaPlayer(p.name, p.color, score.coerceAtLeast(0), userId = p.userId)))
+    }
+
+    fun escobaRemovePlayer(s: AppState, index: Int): AppState {
+        val g = s.escobaGame ?: return s
+        if (g.players.size <= 2 || index !in g.players.indices) return s
+        return s.copy(escobaGame = g.copy(players = g.players.filterIndexed { i, _ -> i != index }))
+    }
 
     fun escobaSetTarget(s: AppState, target: Int): AppState {
         val g = s.escobaGame ?: return s
@@ -1738,7 +1898,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.players.map { ResultLine(it.name, it.score.toString(), it.color, it in winners) }
         val summary = "Escoba · " + wNames.joinToString("/") + " ($best)"
-        val entry = HistoryEntry(newId("h"), GameType.ESCOBA, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.ESCOBA, g.players.mapNotNull { it.userId }, g.players.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return withHistory(s, entry).copy(escobaGame = g.copy(finished = true), pendingResult = GameResult(GameType.ESCOBA, "Escoba de 15", wNames, lines, summary))
     }
 
@@ -1814,7 +1974,7 @@ object AppActions {
         val wNames = winners.map { it.name }
         val lines = g.teams.map { ResultLine(it.name, "${it.vacas}V · ${it.juegos}J · ${it.piedras}", it.color, it in winners) }
         val summary = "Mus · " + wNames.joinToString("/")
-        val entry = HistoryEntry(newId("h"), GameType.MUS, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis())
+        val entry = HistoryEntry(newId("h"), GameType.MUS, emptyList(), g.teams.map { it.name }, wNames, summary, System.currentTimeMillis(), lines = lines)
         return s.copy(musGame = g.copy(finished = true), history = listOf(entry) + s.history, pendingResult = GameResult(GameType.MUS, "Mus", wNames, lines, summary))
     }
 
@@ -1835,4 +1995,10 @@ object AppActions {
 
     fun setSoundVolume(s: AppState, volume: Float): AppState =
         s.copy(settings = s.settings.copy(soundVolume = volume.coerceIn(0f, 1f)))
+
+    fun setKeepScreenOn(s: AppState, on: Boolean): AppState =
+        s.copy(settings = s.settings.copy(keepScreenOn = on))
+
+    fun setMenuGrid(s: AppState, grid: Boolean): AppState =
+        s.copy(settings = s.settings.copy(menuGrid = grid))
 }

@@ -55,6 +55,8 @@ import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.PokemonPlayer
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -97,13 +99,15 @@ fun PokemonScreen(
 
     var showCoin by remember { mutableStateOf(false) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.pokemonReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.pokemonFinish(it) } }
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
     val bar: @Composable () -> Unit = {
         CentralBar(
             step = game.damageStep,
             onStep = { s -> repo.update { AppActions.pokemonSetStep(it, s) } },
-            onReset = { repo.update { AppActions.pokemonReset(it) } },
+            onReset = { askReset() },
             onCoin = { showCoin = true },
             onConfig = { showConfig = true },
         )
@@ -149,7 +153,7 @@ fun PokemonScreen(
             count = players.size,
             startingPrizes = game.startingPrizes,
             onApply = { count, prizes -> repo.update { AppActions.pokemonConfigure(it, count, prizes) } },
-            onFinish = { repo.update { AppActions.pokemonFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

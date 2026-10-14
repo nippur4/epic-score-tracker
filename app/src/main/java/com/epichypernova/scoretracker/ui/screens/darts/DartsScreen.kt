@@ -49,14 +49,23 @@ import com.epichypernova.scoretracker.data.model.DartsPlayer
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
+import com.epichypernova.scoretracker.ui.components.NameEditDialog
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
 import com.epichypernova.scoretracker.ui.components.PresetChips
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.Standing
+import com.epichypernova.scoretracker.ui.components.StandingsPill
+import com.epichypernova.scoretracker.ui.components.StandingsSheet
 import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.gamePaneGradient
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -72,7 +81,7 @@ fun DartsScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         var start by remember { mutableIntStateOf(501) }
         PlayerSetupScreen(
             repo = repo, state = state, gameType = GameType.DARTS,
-            minPlayers = 2, maxPlayers = 8, defaultCount = 2, onBack = onBack,
+            minPlayers = 2, maxPlayers = null, defaultCount = 2, onBack = onBack,
             options = {
                 SheetLabel(stringResource(R.string.darts_start))
                 PresetChips(listOf(301, 501, 701), start, ACCENT) { start = it }
@@ -84,19 +93,35 @@ fun DartsScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     val players = game.players
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.dartsReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.dartsNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.dartsFinish(it) } }
     var throwForIndex by remember { mutableIntStateOf(-1) }
+    var renameFor by remember { mutableIntStateOf(-1) }
+    var showAdd by remember { mutableStateOf(false) }
+    var showStandings by remember { mutableStateOf(false) }
+
+    val bar: @Composable () -> Unit = {
+        CentralBar(
+            game.startScore,
+            onStandings = { showStandings = true },
+            onAdd = { showAdd = true },
+            onReset = { askReset() },
+            onConfig = { showConfig = true },
+        )
+    }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         Column(Modifier.fillMaxSize().gameInsets()) {
             if (players.size == 2) {
                 // Head to head: the top pane is flipped so the player across the table reads it.
                 DartPane(players[0], rotated = true, onThrow = { throwForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
-                CentralBar(game.startScore, onReset = { repo.update { AppActions.dartsReset(it) } }, onConfig = { showConfig = true })
+                bar()
                 DartPane(players[1], rotated = false, onThrow = { throwForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
             } else {
-                CentralBar(game.startScore, onReset = { repo.update { AppActions.dartsReset(it) } }, onConfig = { showConfig = true })
+                bar()
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    itemsIndexed(players) { i, p -> DartCard(p, onThrow = { throwForIndex = i }) }
+                    itemsIndexed(players) { i, p -> DartCard(p, onThrow = { throwForIndex = i }, onRename = { renameFor = i }) }
                 }
             }
         }
@@ -115,12 +140,42 @@ fun DartsScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             max = 180,
         )
     }
+    if (renameFor >= 0) {
+        val idx = renameFor
+        NameEditDialog(
+            players.getOrNull(idx)?.name ?: "",
+            onSave = { n -> repo.update { AppActions.dartsSetName(it, idx, n) } },
+            onClose = { renameFor = -1 },
+            onRemove = if (players.size > 2) ({ repo.update { AppActions.dartsRemovePlayer(it, idx) } }) else null,
+        )
+    }
+    if (showAdd) {
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { u -> players.any { it.userId == u.id } },
+            title = stringResource(R.string.add_player_title),
+            allowGuest = true,
+            startScore = game.startScore,
+            onConfirm = { added, start -> repo.update { s -> added.fold(s) { acc, p -> AppActions.dartsAddPlayer(acc, p, start) } } },
+            onClose = { showAdd = false },
+        )
+    }
+    if (showStandings) {
+        StandingsSheet(
+            // Darts counts down to zero, so the smallest number left is the one in front.
+            entries = players.map { Standing(it.name, Color(it.color), it.remaining) },
+            lowWins = true,
+            accent = ACCENT,
+            onClose = { showStandings = false },
+        )
+    }
     if (showConfig) {
         ConfigSheet(
             start = game.startScore,
             onApply = { st -> repo.update { AppActions.dartsSetStart(it, st) } },
-            onNew = { repo.update { AppActions.dartsNew(it) } },
-            onFinish = { repo.update { AppActions.dartsFinish(it) } },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -157,27 +212,29 @@ private fun DartPane(player: DartsPlayer, rotated: Boolean, onThrow: () -> Unit,
 
 /** Compact row used when more than two people play. */
 @Composable
-private fun DartCard(p: DartsPlayer, onThrow: () -> Unit) {
+private fun DartCard(p: DartsPlayer, onThrow: () -> Unit, onRename: () -> Unit) {
     val tint = Color(p.color)
     val shape = RoundedCornerShape(16.dp)
     Row(
         Modifier.fillMaxWidth().clip(shape).background(Color(0x0DFFFFFF)).border(1.dp, tint.copy(alpha = 0.35f), shape).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(Modifier.weight(1f)) { PlayerNameRow(p.name, tint) }
+        Box(Modifier.weight(1f)) { PlayerNameRow(p.name, tint, onClick = onRename) }
         Text("${p.remaining}", color = Palette.TextPrimary, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, fontFeatureSettings = "tnum"))
         ThrowButton(onThrow, compact = true)
     }
 }
 
 @Composable
-private fun CentralBar(start: Int, onReset: () -> Unit, onConfig: () -> Unit) {
+private fun CentralBar(start: Int, onStandings: () -> Unit, onAdd: () -> Unit, onReset: () -> Unit, onConfig: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Palette.AppBgDeep).border(1.dp, ACCENT.copy(alpha = 0.28f), RoundedCornerShape(0.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         GameIcon(R.drawable.ic_target, ACCENT, 16)
         Text("$start", color = Palette.TextMuted, modifier = Modifier.weight(1f), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 11.sp, letterSpacing = 1.2.sp))
+        StandingsPill { onStandings() }
+        GamePill("＋") { onAdd() }
         GamePill(stringResource(R.string.score_reset)) { onReset() }
         GamePill("⚙") { onConfig() }
     }
@@ -193,6 +250,7 @@ private fun ConfigSheet(start: Int, onApply: (Int) -> Unit, onNew: () -> Unit, o
             SheetLabel(stringResource(R.string.darts_start))
             PresetChips(listOf(301, 501, 701), st, ACCENT) { st = it }
             SheetPrimaryButton(stringResource(R.string.done), ACCENT) { onApply(st); onClose() }
+            RulesButton(GameType.DARTS)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

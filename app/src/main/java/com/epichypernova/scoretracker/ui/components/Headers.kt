@@ -61,10 +61,31 @@ fun BackHeader(
     }
 }
 
-/** Overflow menu with a single "finish game" action, anchored under the ⋮ of a game board. */
+/**
+ * Overflow menu for a game board: "finish game", plus "add player" when the board
+ * takes players mid-game ([onAddPlayer]) and "view rules" when there are any ([onRules]).
+ */
 @Composable
-fun FinishMenu(expanded: Boolean, onDismiss: () -> Unit, onFinish: () -> Unit) {
+fun FinishMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onFinish: () -> Unit,
+    onAddPlayer: (() -> Unit)? = null,
+    onRules: (() -> Unit)? = null,
+) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, containerColor = Palette.SheetSurface) {
+        if (onAddPlayer != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.player_add), color = Palette.TextPrimary) },
+                onClick = { onDismiss(); onAddPlayer() },
+            )
+        }
+        if (onRules != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.rules_view), color = Palette.TextPrimary) },
+                onClick = { onDismiss(); onRules() },
+            )
+        }
         DropdownMenuItem(
             text = { Text(stringResource(R.string.finish_game), color = Palette.TextPrimary) },
             onClick = { onDismiss(); onFinish() },
@@ -72,7 +93,10 @@ fun FinishMenu(expanded: Boolean, onDismiss: () -> Unit, onFinish: () -> Unit) {
     }
 }
 
-/** Compact header used by the game boards (small title + meta + trailing glyph). */
+/**
+ * Compact header used by the game boards (small title + meta + trailing glyph).
+ * [actions] sits between the meta and the trailing glyph, for board-level buttons.
+ */
 @Composable
 fun CompactHeader(
     title: String,
@@ -80,6 +104,7 @@ fun CompactHeader(
     onBack: () -> Unit,
     trailing: String? = "⋮",
     onTrailing: () -> Unit = {},
+    actions: @Composable (() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth().background(Palette.AppBg).statusBarsPadding()) {
         Row(
@@ -95,6 +120,7 @@ fun CompactHeader(
                 )
                 meta()
             }
+            if (actions != null) Box(Modifier.padding(end = 8.dp)) { actions() }
             if (trailing != null) {
                 Text(trailing, color = Palette.TextSecondary, modifier = Modifier.clickable { onTrailing() }.width(24.dp), style = TextStyle(fontSize = 20.sp))
             }

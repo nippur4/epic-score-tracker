@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -37,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,12 +73,20 @@ fun gamePaneGradient(base: Color, start: Float = 0.42f): List<Color> {
 }
 
 @Composable
-fun GamePill(text: String, filled: Boolean = false, accent: Color = Palette.Cyan, onClick: () -> Unit) {
+fun GamePill(text: String, filled: Boolean = false, accent: Color = Palette.Cyan, label: String? = null, onClick: () -> Unit) {
+    // A bare glyph tells a screen reader nothing, so name the ones the boards use.
+    val spoken = label ?: when (text) {
+        "＋" -> stringResource(R.string.a11y_add_player)
+        "⚙" -> stringResource(R.string.a11y_settings)
+        else -> null
+    }
     Box(
-        Modifier.height(36.dp).clip(RoundedCornerShape(999.dp))
+        Modifier.heightIn(min = 44.dp).height(44.dp).clip(RoundedCornerShape(999.dp))
             .background(if (filled) accent else Color.Transparent)
             .then(if (filled) Modifier else Modifier.border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)))
-            .clickable { onClick() }.padding(horizontal = 13.dp),
+            .clickable(onClickLabel = spoken) { onClick() }
+            .then(if (spoken != null) Modifier.semantics { contentDescription = spoken } else Modifier)
+            .padding(horizontal = 13.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(text, color = if (filled) Palette.OnAccent else Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
@@ -84,7 +95,7 @@ fun GamePill(text: String, filled: Boolean = false, accent: Color = Palette.Cyan
 
 /** Small round − / + used inside counters. Repeats while held. */
 @Composable
-fun MiniStep(symbol: String, size: Int = 26, onClick: () -> Unit) {
+fun MiniStep(symbol: String, size: Int = 30, onClick: () -> Unit) {
     Box(Modifier.size(size.dp).clip(CircleShape).background(Color(0x1FFFFFFF)).repeatingClickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Text(symbol, color = Palette.TextPrimary, style = TextStyle(fontSize = (size * 0.65f).sp))
     }
@@ -94,14 +105,14 @@ fun MiniStep(symbol: String, size: Int = 26, onClick: () -> Unit) {
 @Composable
 fun LabeledCounter(label: String, value: Int, color: Color, onDec: () -> Unit, onInc: () -> Unit, big: Boolean = false, @DrawableRes icon: Int? = null) {
     Row(
-        Modifier.height(if (big) 46.dp else 38.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 10.dp),
+        Modifier.height(if (big) 48.dp else 42.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x17FFFFFF)).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (big) 10.dp else 6.dp),
     ) {
         if (icon != null) GameIcon(icon, color, if (big) 18 else 14)
         Text(label.uppercase(), color = color, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = if (big) 11.sp else 10.sp, letterSpacing = 1.2.sp))
-        MiniStep("−", if (big) 32 else 24, onDec)
+        MiniStep("−", if (big) 36 else 30, onDec)
         Text("$value", color = Palette.TextPrimary, modifier = Modifier.widthIn(min = if (big) 34.dp else 22.dp), textAlign = TextAlign.Center, style = TextStyle(fontFamily = Orbitron, fontWeight = FontWeight.Bold, fontSize = if (big) 20.sp else 15.sp, fontFeatureSettings = "tnum"))
-        MiniStep("+", if (big) 32 else 24, onInc)
+        MiniStep("+", if (big) 36 else 30, onInc)
     }
 }
 

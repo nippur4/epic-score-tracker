@@ -44,6 +44,7 @@ import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.GameCatalog
 import com.epichypernova.scoretracker.ui.GameEntry
 import com.epichypernova.scoretracker.ui.components.CircleIconButton
+import com.epichypernova.scoretracker.ui.components.SearchField
 import com.epichypernova.scoretracker.ui.components.dashedBorder
 import com.epichypernova.scoretracker.ui.theme.Cinzel
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -84,31 +85,10 @@ fun MenuGridContent(
                 contentDescription = "Epic Hypernova",
                 modifier = Modifier.width(196.dp).aspectRatio(1993f / 789f),
             )
-            CircleIconButton("▤", onToggleView)
+            CircleIconButton("▤", label = stringResource(R.string.a11y_view_list), onClick = onToggleView)
         }
 
-        // Search
-        Row(
-            Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(999.dp))
-                .background(Color(0x0DFFFFFF)).border(1.dp, Palette.CardBorder, RoundedCornerShape(999.dp))
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("⌕", color = Color(0xFF7387AF), style = TextStyle(fontSize = 15.sp))
-            Box(Modifier.weight(1f).padding(start = 10.dp)) {
-                if (query.isEmpty()) {
-                    Text(stringResource(R.string.search_hint), color = Color(0xFF7387AF), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp))
-                }
-                BasicTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    singleLine = true,
-                    textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp, color = Palette.TextPrimary),
-                    cursorBrush = SolidColor(Palette.Cyan),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        SearchField(query, { query = it })
 
         // Resume banner
         state.currentGame?.let { game ->
@@ -129,6 +109,27 @@ fun MenuGridContent(
                     Text(names, color = Color(0xFFA9BCE0), style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.sp), maxLines = 1)
                 }
                 Text(stringResource(R.string.open), color = Palette.Cyan, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 12.sp))
+            }
+        }
+
+        // The other boards left going get the same banner, one line each.
+        Derivations.gamesInPlay(state).filterNot { it.isGeneric }.forEach { gt ->
+            val tint = GameCatalog.tintFor(gt)
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(tint.copy(alpha = 0.08f))
+                    .border(1.dp, tint.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+                    .clickable { onOpenSpecific(gt) }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(Palette.Mint))
+                Text(
+                    stringResource(GameCatalog.labelRes(gt)),
+                    color = Palette.TextPrimary,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
+                )
+                Text(stringResource(R.string.open), color = tint, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 12.sp))
             }
         }
 

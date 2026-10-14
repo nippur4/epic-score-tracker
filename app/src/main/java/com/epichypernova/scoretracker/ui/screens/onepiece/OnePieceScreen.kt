@@ -54,6 +54,8 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.OnePiecePlayer
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.gameInsets
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
@@ -95,6 +97,8 @@ fun OnePieceScreen(
     if (players.size < 2) return
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.onePieceReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.onePieceFinish(it) } }
     var showCoin by remember { mutableStateOf(false) }
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
@@ -103,7 +107,7 @@ fun OnePieceScreen(
             OnePiecePane(players[0], 0, game.startingLife, repo, rotated = true, onPickColor = { colorForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
             CentralBar(
                 onCoin = { showCoin = true },
-                onReset = { repo.update { AppActions.onePieceReset(it) } },
+                onReset = { askReset() },
                 onConfig = { showConfig = true },
             )
             OnePiecePane(players[1], 1, game.startingLife, repo, rotated = false, onPickColor = { colorForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
@@ -116,7 +120,7 @@ fun OnePieceScreen(
         OnePieceConfigSheet(
             startingLife = game.startingLife,
             onApply = { life -> repo.update { AppActions.onePieceSetLife(it, life) } },
-            onFinish = { repo.update { AppActions.onePieceFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }

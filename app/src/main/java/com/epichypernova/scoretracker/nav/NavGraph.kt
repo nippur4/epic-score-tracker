@@ -14,6 +14,7 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.AppTab
+import com.epichypernova.scoretracker.ui.components.KeepScreenOn
 import com.epichypernova.scoretracker.ui.screens.history.HistoryScreen
 import com.epichypernova.scoretracker.ui.screens.menu.MenuScreen
 import com.epichypernova.scoretracker.ui.screens.players.EditPlayerScreen
@@ -27,6 +28,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         AppTab.JUEGOS to stringResource(R.string.tab_games),
         AppTab.HISTORIAL to stringResource(R.string.tab_history),
         AppTab.JUGADORES to stringResource(R.string.tab_players),
+        AppTab.DADOS to stringResource(R.string.tab_dice),
         AppTab.AJUSTES to stringResource(R.string.settings),
     )
 
@@ -42,6 +44,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
             AppTab.JUEGOS -> Routes.MENU
             AppTab.HISTORIAL -> Routes.HISTORY
             AppTab.JUGADORES -> Routes.PLAYERS
+            AppTab.DADOS -> Routes.DICE
             AppTab.AJUSTES -> Routes.SETTINGS
         }
         navController.navigate(route) {
@@ -59,30 +62,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                 onSelectTab = ::goTab,
                 onOpenCurrent = { navController.navigate(Routes.GENERIC_TABLE) },
                 onStartGeneric = { gt -> navController.navigate(Routes.genericSetup(gt.name)) },
-                onOpenSpecific = { gt ->
-                    when (gt) {
-                        GameType.TRUCO -> navController.navigate(Routes.TRUCO)
-                        GameType.MAGIC -> navController.navigate(Routes.MAGIC)
-                        GameType.YUGIOH -> navController.navigate(Routes.YUGIOH)
-                        GameType.POKEMON -> navController.navigate(Routes.POKEMON)
-                        GameType.DIGIMON -> navController.navigate(Routes.DIGIMON)
-                        GameType.LORCANA -> navController.navigate(Routes.LORCANA)
-                        GameType.ONEPIECE -> navController.navigate(Routes.ONEPIECE)
-                        GameType.CHINCHON -> navController.navigate(Routes.CHINCHON)
-                        GameType.BURAKO -> navController.navigate(Routes.BURAKO)
-                        GameType.DARTS -> navController.navigate(Routes.DARTS)
-                        GameType.DND -> navController.navigate(Routes.DND)
-                        GameType.GENERALA -> navController.navigate(Routes.GENERALA)
-                        GameType.BOWLING -> navController.navigate(Routes.BOWLING)
-                        GameType.UNO -> navController.navigate(Routes.UNO)
-                        GameType.WARHAMMER -> navController.navigate(Routes.WARHAMMER)
-                        GameType.POKER -> navController.navigate(Routes.POKER)
-                        GameType.SWU -> navController.navigate(Routes.SWU)
-                        GameType.ESCOBA -> navController.navigate(Routes.ESCOBA)
-                        GameType.MUS -> navController.navigate(Routes.MUS)
-                        else -> Unit
-                    }
-                },
+                onOpenSpecific = { gt -> navController.navigate(Routes.forGame(gt)) },
                 onStartConfig = { cfg ->
                     adGate {
                         repo.update { AppActions.startFromConfig(it, cfg) }
@@ -91,6 +71,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                 },
                 onToggleFavorite = { gt -> repo.update { AppActions.toggleFavoriteGame(it, gt) } },
                 onToggleSection = { key -> repo.update { AppActions.toggleSection(it, key) } },
+                onSetGrid = { g -> repo.update { AppActions.setMenuGrid(it, g) } },
                 onDeleteConfig = { id -> repo.update { AppActions.deleteConfig(it, id) } },
             )
         }
@@ -120,6 +101,12 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
             )
         }
 
+        composable(Routes.DICE) {
+            com.epichypernova.scoretracker.ui.screens.dice.DiceScreen(
+                repo = repo, state = state, tabLabels = tabLabels, onSelectTab = ::goTab,
+            )
+        }
+
         composable(Routes.SETTINGS) {
             com.epichypernova.scoretracker.ui.screens.settings.SettingsScreen(
                 repo = repo, state = state, tabLabels = tabLabels, onSelectTab = ::goTab,
@@ -141,6 +128,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.GENERIC_TABLE) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.generic.GenericTableScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -154,16 +142,24 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
                     repo.update { AppActions.clearResult(it) }
                     navController.popBackStack(Routes.MENU, false)
                 },
+                onRematch = {
+                    val type = state.pendingResult?.gameType
+                    repo.update { AppActions.rematch(it) }
+                    navController.popBackStack(Routes.MENU, false)
+                    type?.let { navController.navigate(Routes.forGame(it)) }
+                },
             )
         }
 
         composable(Routes.TRUCO) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.truco.TrucoScreen(
                 repo = repo, state = state, onBack = { navController.popBackStack() },
             )
         }
 
         composable(Routes.MAGIC) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.magic.MagicScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -171,6 +167,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.YUGIOH) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.yugioh.YuGiOhScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -178,6 +175,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.POKEMON) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.pokemon.PokemonScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -185,6 +183,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.DIGIMON) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.digimon.DigimonScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -192,6 +191,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.LORCANA) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.lorcana.LorcanaScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -199,6 +199,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.ONEPIECE) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.onepiece.OnePieceScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -206,6 +207,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.CHINCHON) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.chinchon.ChinchonScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -213,6 +215,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.BURAKO) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.burako.BurakoScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -220,6 +223,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.DARTS) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.darts.DartsScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -227,6 +231,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.DND) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.dnd.DndScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -234,6 +239,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.GENERALA) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.generala.GeneralaScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -241,6 +247,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.BOWLING) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.bowling.BowlingScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -248,6 +255,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.UNO) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.uno.UnoScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -255,6 +263,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.WARHAMMER) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.warhammer.WarhammerScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -262,6 +271,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.POKER) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.poker.PokerScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -269,6 +279,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.SWU) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.swu.SwuScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -276,6 +287,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.ESCOBA) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.escoba.EscobaScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },
@@ -283,6 +295,7 @@ fun AppNavGraph(repo: Repository, navController: NavHostController = rememberNav
         }
 
         composable(Routes.MUS) {
+            KeepScreenOn(state.settings.keepScreenOn)
             com.epichypernova.scoretracker.ui.screens.mus.MusScreen(
                 repo = repo, state = state,
                 onBack = { navController.popBackStack() },

@@ -82,7 +82,7 @@
     <!-- Generic setup -->
     <string name="new_game">New game</string>
     <string name="players_label">Players</string>
-    <string name="players_count">%1$d of 6</string>
+    <string name="players_count">%1$d players</string>
     <string name="rules">Rules</string>
     <string name="target_score">Target score</string>
     <string name="wins">Winner</string>
@@ -98,7 +98,7 @@
     <string name="save_config_sub">Start faster next time</string>
     <string name="start_game">Start game</string>
     <string name="add_player_chip">＋ Add</string>
-    <string name="add_player_title">Add player</string>
+    <string name="add_player_title">Add players</string>
 
     <!-- Generic table -->
     <string name="table_meta">Hand %1$d · to %2$d · %3$s wins</string>
@@ -119,6 +119,14 @@
     <string name="back_to_menu">Back to menu</string>
     <string name="no_current_game">No game in progress</string>
     <string name="leader_note">%1$s is leading with %2$d · the game ends when someone reaches %3$d</string>
+
+    <!-- Standings -->
+    <string name="standings_title">Standings</string>
+    <string name="standings_rule">The %1$s score wins</string>
+    <string name="standings_leader">Leading</string>
+    <string name="standings_behind">%1$d behind the leader</string>
+    <string name="standings_tied">Tied for the lead</string>
+
     <string name="bid_pedia">said %1$d</string>
     <string name="save_hand">Save points</string>
 
@@ -290,6 +298,10 @@
     <!-- Generala / Bowling / Uno / Warhammer / Poker / SWU / Escoba / Mus -->
     <string name="player_add">＋ Player</string>
     <string name="player_remove">Remove player</string>
+    <string name="player_remove_note">They leave this game and whatever they scored goes with them.</string>
+    <string name="player_remove_min">At least two players have to stay in.</string>
+    <string name="player_start_score">Starting score</string>
+    <string name="player_start_score_hint">default %1$d</string>
     <string name="generala_servida">Served</string>
     <string name="generala_tachar">Cross out</string>
     <string name="generala_dice">Dice count</string>
@@ -347,11 +359,15 @@
     <!-- Player setup (specific games) -->
     <string name="setup_player_count">Number of players</string>
     <string name="setup_player_range">Between %1$d and %2$d</string>
+    <string name="setup_player_range_open">From %1$d, no limit</string>
     <string name="setup_guest">Guest</string>
     <string name="setup_guest_name">Player %1$d</string>
     <string name="setup_saved_player">Saved player</string>
     <string name="setup_change">Change</string>
-    <string name="setup_pick_title">Pick a player</string>
+    <string name="setup_pick_title">Pick players</string>
+    <string name="pick_players_hint">Tap everyone who\'s playing, then confirm.</string>
+    <string name="pick_players_hint_max">You can pick up to %1$d players.</string>
+    <string name="pick_players_confirm">Add (%1$d)</string>
     <string name="setup_new_game">New game</string>
     <string name="setup_new_game_sub">Change players or rules</string>
 
@@ -371,15 +387,9 @@
     <string name="avatar">Avatar</string>
     <string name="unlock_avatars_title">Unlock avatars</string>
     <string name="unlock_avatars_sub">Watch ads to unlock each one</string>
-    <string name="unlock_watch_button">Watch ad</string>
-    <string name="unlock_progress">%1$d/%2$d watched</string>
-    <plurals name="unlock_watch_ads">
-        <item quantity="one">Watch %1$d ad to unlock</item>
-        <item quantity="other">Watch %1$d ads to unlock</item>
-    </plurals>
-    <string name="new_player_name_hint">Player name</string>
+    <string name="new_player_names_hint">Names separated by commas</string>
     <string name="create_and_add">Create and add</string>
-    <string name="or_create_new">Or create a new one</string>
+    <string name="or_create_new">Or create one or more</string>
     <string name="config_name_label">Configuration name</string>
     <string name="favorite">Frequent player</string>
     <string name="favorite_sub">Shows first when building a game</string>
@@ -423,4 +433,75 @@
     <string name="feedback_bug_body">Tell us what happened and we will look into it.\n\n1) GAME AND SCREEN WHERE IT HAPPENED\n\n\n2) WHAT YOU DID, STEP BY STEP\n\n\n3) WHAT YOU EXPECTED TO HAPPEN\n\n\n4) WHAT ACTUALLY HAPPENED\n\n\n5) SCREENSHOT\nAttach one to this email if you can.\n\n</string>
     <string name="feedback_env">—\nEpic Hypernova v%1$s · %2$s · Android %3$s</string>
     <string name="feedback_no_mail_app">No email app found. Write to us at %1$s</string>
+
+    <!-- Rules sheet -->
+    <string name="rules_view">View rules</string>
+    <string name="rules_section_game">The game</string>
+    <string name="rules_section_score">Entering scores</string>
+    <string name="rules_manos">For games scored hand by hand. Every hand adds (or subtracts) points and the game ends when someone reaches the target score. In the rules you choose whether the highest or the lowest wins, whether there is a fixed number of hands, and whether bids are called before playing them.</string>
+    <string name="rules_manos_score">Tap «Enter points» at the bottom and type what each player did this hand. With bids on, you first enter what everyone called and then the hands they actually won: only the player who won exactly what they called scores the points per trick, plus any extras. Tap a hand already entered to fix it.</string>
+    <string name="rules_contador">A bare scoreboard: each round you add or subtract points, no hands and no bids. The game ends when someone reaches the target, and the highest or lowest wins depending on what you chose.</string>
+    <string name="rules_contador_score">Tap «Enter points» at the bottom and type each player\'s score for that round; negative numbers subtract. Tap a round already entered to fix it.</string>
+    <string name="rules_truco">Two teams, Us and Them, to 15 (bad half only) or to 30 (bad and good halves). The first 15 points are the bad half and everything after that is the good half. Whoever reaches the target wins the match, which is tallied at the top.</string>
+    <string name="rules_truco_score">Tap +1, +2 or +3 on the team that took the points. You can also double tap the pane or swipe it up to add one. «− Remove» takes a point back, «Undo» reverts the last move, and «New match» starts another one keeping the matches won.</string>
+    <string name="rules_chinchon">A melding and discarding game. When a hand closes, everyone adds up the cards left in their hand: here the lowest score wins and whoever goes past the target is out. Closing with chinchón wins the game outright.</string>
+    <string name="rules_chinchon_score">Tap «+ Add» on the player\'s pane and type the points left in their hand. «Cut» takes 10 off whoever cut cleanly, and the chinchón button hands them the game right away. Tap a name to rename them or take them off the table.</string>
+    <string name="rules_burako">Two teams to 2000 points. When each hand closes you count the melds, what was laid down and what was left in hand, and the first team to reach the target wins.</string>
+    <string name="rules_burako_score">Tap «+ Add» on the team\'s pane and type the hand\'s total on the keypad; the 200 and 100 buttons add it faster.</string>
+    <string name="rules_darts">Everyone starts at 501 (or whatever you picked) and subtracts each turn. The first to land on exactly 0 wins: going below zero or leaving 1 is a bust, and the turn doesn\'t count.</string>
+    <string name="rules_darts_score">Tap «Throw» on whoever is up and enter the total of their three darts, up to 180. The 100, 60, 40 and 20 buttons add it faster. With three players or more, tap a name to rename or remove them.</string>
+    <string name="rules_generala">A dice scoresheet: each player fills every category once, 1 through 6 plus the combinations. A combination rolled on the first throw is «served» and is worth more, and a served generala wins the game instantly. Once every box is filled, the highest total wins.</string>
+    <string name="rules_generala_score">Tap a player\'s box and pick the value: for numbers, how many dice of that face they rolled; for combinations, whether it was built or served. «✕ Cross out» leaves the box at zero when nothing was made.</string>
+    <string name="rules_bowling">Ten frames each, two rolls per frame. A strike (all ten at once) and a spare (all ten across both rolls) also add whatever you knock down on the next rolls, and the 10th frame grants an extra roll when earned.</string>
+    <string name="rules_bowling_score">Use the keypad at the bottom to tap how many pins the player up knocked down, roll by roll. The turn passes on its own when the frame ends, and «Undo» fixes the last roll.</string>
+    <string name="rules_uno">Played in rounds. Whoever runs out of cards wins the round and collects the points of the cards left in everyone else\'s hands. First to the target score wins.</string>
+    <string name="rules_uno_score">Tap «End round», pick who went out, and enter each hand with the card numbers: «Action» adds 20 and «Wild» adds 50. You can also adjust by hand with − and + on each card.</string>
+    <string name="rules_warhammer">Two players, five battle rounds. Each scores victory points for the primary objective (up to 50) and for secondaries, and tracks command points separately.</string>
+    <string name="rules_warhammer_score">Use − and + on each counter: primary, secondaries and CP. The round changes at the top and, once you confirm the fifth, the battle closes and the winner is shown.</string>
+    <string name="rules_poker">No scores here: this is the blind timer. Each level runs for the minutes you set and, when it runs out, moves on to the next one with higher blinds.</string>
+    <string name="rules_poker_score">Tap «Start» to run the clock and «Pause» to stop it. Use − and + to count down the players still at the table.</string>
+    <string name="rules_escoba">You add up to 15 with the cards on the table. When the hand closes the points are split: cards (whoever took most), golds, the 7 of golds (velo) and the setenta, plus one escoba for every time someone swept the table.</string>
+    <string name="rules_escoba_score">Count escobas with − and + on the player\'s card as you play. When the hand ends tap «Close hand» and pick who took each point, or «Nobody» when it was a tie.</string>
+    <string name="rules_mus">Two teams. Stones are added one or two at a time: 5 stones make an amarrako and 40 stones close a juego. The juegos you configure close a vaca, and the team reaching the agreed vacas wins.</string>
+    <string name="rules_mus_score">Tap +1 or +2 on the team that took the lance, «+N» to enter several stones at once, and «Órdago» when they take the whole juego. «↶ Undo» reverts the last move.</string>
+
+    <!-- Dice tray -->
+    <string name="tab_dice">Dice</string>
+    <string name="dice_title">Roll dice</string>
+    <string name="dice_count">How many dice</string>
+    <string name="dice_count_sub">Up to %1$d</string>
+    <string name="dice_label">The dice</string>
+    <string name="dice_hint">Tap a die to change its kind.</string>
+    <string name="dice_pick_title">Kind of die</string>
+    <string name="dice_roll">Roll</string>
+    <string name="dice_rolling">Rolling…</string>
+    <string name="dice_total">Total</string>
+
+    <!-- Confirmations, screen-on, rematch, games in play -->
+    <string name="score_reset_word">Reset</string>
+    <string name="confirm_reset_title">Reset the scoreboard?</string>
+    <string name="confirm_reset_text">Every score goes back to zero. The players stay.</string>
+    <string name="confirm_new_title">Start a new game?</string>
+    <string name="confirm_new_text">The game in play is thrown away and you pick players again.</string>
+    <string name="confirm_new_button">Start over</string>
+    <string name="confirm_finish_title">Finish the game?</string>
+    <string name="confirm_finish_text">It goes to the history with the current score and the winner is shown.</string>
+    <string name="confirm_finish_button">Finish</string>
+    <string name="keep_screen_on">Keep the screen on</string>
+    <string name="keep_screen_on_sub">While a board is open</string>
+    <string name="rematch">Play again</string>
+    <string name="menu_section_playing">In play</string>
+    <string name="menu_resume">Tap to resume</string>
+    <string name="screen">Screen</string>
+    <string name="players_need_two">Add at least two players to start.</string>
+    <string name="a11y_add_player">Add player</string>
+    <string name="a11y_settings">Game settings</string>
+    <string name="a11y_remove_player">Remove from the list</string>
+    <string name="a11y_view_grid">Show as a mosaic</string>
+    <string name="a11y_view_list">Show as a list</string>
+    <string name="a11y_standings">View standings</string>
+    <string name="search_empty">No games with that name.</string>
+    <string name="search_clear">Clear the search</string>
+    <string name="unlock_avatars_count">%1$d still locked</string>
+    <string name="unlock_one_ad">1 ad</string>
 </resources>

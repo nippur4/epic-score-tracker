@@ -44,8 +44,12 @@ import com.epichypernova.scoretracker.data.AppActions
 import com.epichypernova.scoretracker.data.Repository
 import com.epichypernova.scoretracker.data.model.AppState
 import com.epichypernova.scoretracker.data.model.BurakoTeam
+import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.NumberPadSheet
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
 import com.epichypernova.scoretracker.ui.theme.SpaceGrotesk
@@ -64,12 +68,14 @@ fun BurakoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     if (teams.size < 2) return
 
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.burakoReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.burakoFinish(it) } }
     var addForIndex by remember { mutableIntStateOf(-1) }
 
     Box(Modifier.fillMaxSize().background(Palette.AppBgDeep)) {
         Column(Modifier.fillMaxSize().gameInsets()) {
             TeamPane(teams[0], game.target, repo, rotated = true, onAdd = { addForIndex = 0 }, modifier = Modifier.weight(1f).fillMaxWidth())
-            CentralBar(game.target, onReset = { repo.update { AppActions.burakoReset(it) } }, onConfig = { showConfig = true })
+            CentralBar(game.target, onReset = { askReset() }, onConfig = { showConfig = true })
             TeamPane(teams[1], game.target, repo, rotated = false, onAdd = { addForIndex = 1 }, modifier = Modifier.weight(1f).fillMaxWidth())
         }
     }
@@ -90,7 +96,7 @@ fun BurakoScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
         ConfigSheet(
             target = game.target,
             onApply = { t -> repo.update { AppActions.burakoSetTarget(it, t) } },
-            onFinish = { repo.update { AppActions.burakoFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -159,6 +165,7 @@ private fun ConfigSheet(target: Int, onApply: (Int) -> Unit, onFinish: () -> Uni
             Box(Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(999.dp)).background(Palette.Cyan).clickable { onApply(t); onClose() }, contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.done), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 15.sp))
             }
+            RulesButton(GameType.BURAKO)
             Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Palette.ButtonBorder, RoundedCornerShape(999.dp)).clickable { onFinish(); onClose() }, contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.finish_game), color = Palette.TextSecondary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp))
             }

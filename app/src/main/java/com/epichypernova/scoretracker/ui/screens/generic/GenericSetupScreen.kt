@@ -21,15 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -52,6 +50,8 @@ import com.epichypernova.scoretracker.ui.components.AppToggle
 import com.epichypernova.scoretracker.ui.components.Avatar
 import com.epichypernova.scoretracker.ui.components.BackHeader
 import com.epichypernova.scoretracker.ui.components.ChamferCta
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
+import com.epichypernova.scoretracker.ui.components.RulesLink
 import com.epichypernova.scoretracker.ui.components.SectionLabel
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.Stepper
@@ -73,9 +73,8 @@ fun GenericSetupScreen(
     val title = stringResource(if (gameType == GameType.CONTADOR_SIMPLE) R.string.game_contador_title else R.string.game_manos_title)
     val hasHands = gameType == GameType.MANOS_Y_PUNTOS
 
-    val selectedIds = remember {
-        state.users.filter { it.favorite }.map { it.id }.toMutableStateList()
-    }
+    // Nobody is assumed in: the table starts empty and you add who's actually playing.
+    val selectedIds = remember { mutableStateListOf<String>() }
     var targetScore by remember { mutableStateOf(100) }
     var lowWins by remember { mutableStateOf(true) }
     var fixedHandsOn by remember { mutableStateOf(false) }
@@ -85,7 +84,6 @@ fun GenericSetupScreen(
     var saveConfig by remember { mutableStateOf(false) }
     var configName by remember { mutableStateOf("") }
     var showAdd by remember { mutableStateOf(false) }
-    var newName by remember { mutableStateOf("") }
 
     val selectedUsers = selectedIds.mapNotNull { id -> state.users.firstOrNull { it.id == id } }
     val canStart = selectedIds.size >= 2 && (!saveConfig || configName.isNotBlank())
@@ -124,6 +122,16 @@ fun GenericSetupScreen(
                     }
                     AddChip(onClick = { showAdd = true })
                 }
+                // Say why the start button is dim instead of leaving it a mystery.
+                if (selectedIds.size < 2) {
+                    Text(
+                        stringResource(R.string.players_need_two),
+                        color = Palette.TextTertiary,
+                        style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 12.5.sp),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                RulesLink(gameType, Modifier.padding(top = 6.dp))
             }
 
             // Rules
@@ -255,78 +263,16 @@ fun GenericSetupScreen(
     }
 
     if (showAdd) {
-        val available = state.users.filterNot { it.id in selectedIds }
-        AlertDialog(
-            onDismissRequest = { showAdd = false },
-            confirmButton = { TextButton(onClick = { showAdd = false }) { Text(stringResource(R.string.done), color = Palette.Cyan) } },
-            title = { Text(stringResource(R.string.add_player_title), color = Palette.TextPrimary) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    available.forEach { u ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { selectedIds.add(u.id); showAdd = false }.padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Avatar(u.name, Color(u.color), size = 32, fontSize = 15, avatarId = u.avatarId)
-                            Text(u.name, color = Palette.TextPrimary, modifier = Modifier.padding(start = 12.dp))
-                        }
-                    }
-
-                    // Create a new player without leaving this screen
-                    Text(
-                        stringResource(R.string.or_create_new),
-                        color = Palette.TextTertiary,
-                        style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.2.sp),
-                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-                    )
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Palette.ControlFill)
-                            .border(1.dp, Palette.CardBorder, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(Modifier.weight(1f)) {
-                            if (newName.isEmpty()) {
-                                Text(stringResource(R.string.new_player_name_hint), color = Palette.TextMuted, style = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp))
-                            }
-                            BasicTextField(
-                                value = newName,
-                                onValueChange = { newName = it },
-                                singleLine = true,
-                                textStyle = TextStyle(fontFamily = SpaceGrotesk, fontSize = 14.sp, color = Palette.TextPrimary),
-                                cursorBrush = SolidColor(Palette.Cyan),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                    Box(
-                        Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(999.dp))
-                            .background(Palette.Cyan).alpha(if (newName.isBlank()) 0.4f else 1f)
-                            .clickable(enabled = newName.isNotBlank()) {
-                                val color = NEW_PLAYER_COLORS[state.users.size % NEW_PLAYER_COLORS.size]
-                                val user = User(AppActions.newId("u"), newName.trim(), color)
-                                repo.update { AppActions.addExistingUser(it, user) }
-                                selectedIds.add(user.id)
-                                newName = ""
-                                showAdd = false
-                            }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(stringResource(R.string.create_and_add), color = Palette.OnAccent, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp))
-                    }
-                }
-            },
-            containerColor = Palette.SheetSurface,
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { it.id in selectedIds },
+            title = stringResource(R.string.add_player_title),
+            onConfirm = { players, _ -> selectedIds.addAll(players.mapNotNull { it.userId }) },
+            onClose = { showAdd = false },
         )
     }
 }
-
-private val NEW_PLAYER_COLORS = listOf(
-    0xFF2FD3F0, 0xFF55E6A5, 0xFFFF6FA8, 0xFFA18AF5, 0xFF3B7BF7, 0xFFF27BA9,
-)
 
 @Composable
 private fun PlayerChip(user: User, onRemove: () -> Unit) {
@@ -341,7 +287,12 @@ private fun PlayerChip(user: User, onRemove: () -> Unit) {
     ) {
         Avatar(user.name, Color(user.color), size = 27, fontSize = 12, avatarId = user.avatarId)
         Text(user.name, color = Palette.TextPrimary, style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium, fontSize = 14.sp))
-        Text("✕", color = Palette.TextMuted, modifier = Modifier.clickable { onRemove() }, style = TextStyle(fontSize = 13.sp))
+        Box(
+            Modifier.size(32.dp).clip(CircleShape).clickable(onClickLabel = stringResource(R.string.a11y_remove_player)) { onRemove() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("✕", color = Palette.TextMuted, style = TextStyle(fontSize = 13.sp))
+        }
     }
 }
 

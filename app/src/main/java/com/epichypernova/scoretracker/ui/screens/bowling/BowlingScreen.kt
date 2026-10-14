@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.epichypernova.scoretracker.R
@@ -45,11 +46,19 @@ import com.epichypernova.scoretracker.data.model.GameType
 import com.epichypernova.scoretracker.ui.components.GameIcon
 import com.epichypernova.scoretracker.ui.components.GamePill
 import com.epichypernova.scoretracker.ui.components.NameEditDialog
+import com.epichypernova.scoretracker.ui.components.PickPlayersDialog
 import com.epichypernova.scoretracker.ui.components.PlayerNameRow
+import com.epichypernova.scoretracker.ui.components.RulesButton
 import com.epichypernova.scoretracker.ui.components.SheetLabel
 import com.epichypernova.scoretracker.ui.components.SheetPrimaryButton
 import com.epichypernova.scoretracker.ui.components.SheetSecondaryButton
+import com.epichypernova.scoretracker.ui.components.Standing
+import com.epichypernova.scoretracker.ui.components.StandingsPill
+import com.epichypernova.scoretracker.ui.components.StandingsSheet
 import com.epichypernova.scoretracker.ui.components.gameInsets
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberNewGameConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.screens.setup.PlayerSetupScreen
 import com.epichypernova.scoretracker.ui.theme.Orbitron
 import com.epichypernova.scoretracker.ui.theme.Palette
@@ -64,7 +73,7 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
     if (game == null || (game.finished && state.pendingResult == null)) {
         PlayerSetupScreen(
             repo = repo, state = state, gameType = GameType.BOWLING,
-            minPlayers = 1, maxPlayers = 8, defaultCount = 2, onBack = onBack,
+            minPlayers = 1, maxPlayers = null, defaultCount = 2, onBack = onBack,
             onStart = { players -> repo.update { AppActions.bowlingStart(it, players) } },
         )
         return
@@ -76,6 +85,11 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
 
     var renameFor by remember { mutableIntStateOf(-1) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.bowlingReset(it) } }
+    val askNew = rememberNewGameConfirm { repo.update { AppActions.bowlingNew(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.bowlingFinish(it) } }
+    var showAdd by remember { mutableStateOf(false) }
+    var showStandings by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(Palette.AppBgDeep).gameInsets()) {
         Row(
@@ -86,10 +100,12 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             Text(
                 if (current != null && !game.finished) stringResource(R.string.bowling_turn, current.name) + " · ${stringResource(R.string.bowling_frame)} ${frameNo.coerceAtMost(10)}" else "—",
                 color = Color(current?.color ?: 0xFFFFFFFF), modifier = Modifier.weight(1f), maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = 1.2.sp),
             )
             GamePill(stringResource(R.string.bowling_undo)) { repo.update { AppActions.bowlingUndo(it) } }
-            GamePill("＋") { repo.update { AppActions.bowlingAddPlayer(it) } }
+            StandingsPill { showStandings = true }
+            GamePill("＋") { showAdd = true }
             GamePill("⚙") { showConfig = true }
         }
 
@@ -133,12 +149,31 @@ fun BowlingScreen(repo: Repository, state: AppState, onBack: () -> Unit) {
             onRemove = if (players.size > 1) ({ repo.update { AppActions.bowlingRemovePlayer(it, renameFor) } }) else null,
         )
     }
+    if (showAdd) {
+        PickPlayersDialog(
+            repo = repo,
+            state = state,
+            candidates = state.users.filterNot { u -> players.any { it.userId == u.id } },
+            title = stringResource(R.string.add_player_title),
+            allowGuest = true,
+            onConfirm = { added, _ -> repo.update { s -> added.fold(s) { acc, p -> AppActions.bowlingAddPlayer(acc, p) } } },
+            onClose = { showAdd = false },
+        )
+    }
+    if (showStandings) {
+        StandingsSheet(
+            entries = players.map { Standing(it.name, Color(it.color), BowlingScoring.total(it.rolls)) },
+            lowWins = false,
+            accent = ACCENT,
+            onClose = { showStandings = false },
+        )
+    }
     if (showConfig) {
         ConfigSheet(
-            onAdd = { repo.update { AppActions.bowlingAddPlayer(it) } },
-            onReset = { repo.update { AppActions.bowlingReset(it) } },
-            onNew = { repo.update { AppActions.bowlingNew(it) } },
-            onFinish = { repo.update { AppActions.bowlingFinish(it) } },
+            onAdd = { showAdd = true },
+            onReset = { askReset() },
+            onNew = { askNew() },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
@@ -201,6 +236,7 @@ private fun ConfigSheet(onAdd: () -> Unit, onReset: () -> Unit, onNew: () -> Uni
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SheetPrimaryButton(stringResource(R.string.player_add), ACCENT) { onAdd(); onClose() }
             SheetSecondaryButton(stringResource(R.string.score_reset)) { onReset(); onClose() }
+            RulesButton(GameType.BOWLING)
             SheetSecondaryButton(stringResource(R.string.setup_new_game)) { onNew(); onClose() }
             SheetSecondaryButton(stringResource(R.string.finish_game)) { onFinish(); onClose() }
         }

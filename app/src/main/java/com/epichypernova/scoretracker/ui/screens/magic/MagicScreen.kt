@@ -60,6 +60,8 @@ import com.epichypernova.scoretracker.ui.components.ExperienceIcon
 import com.epichypernova.scoretracker.ui.components.PoisonIcon
 import com.epichypernova.scoretracker.ui.components.Segmented
 import com.epichypernova.scoretracker.ui.components.AppToggle
+import com.epichypernova.scoretracker.ui.components.rememberFinishConfirm
+import com.epichypernova.scoretracker.ui.components.rememberResetConfirm
 import com.epichypernova.scoretracker.ui.components.repeatingClickable
 import com.epichypernova.scoretracker.ui.components.rememberSoundEffect
 import com.epichypernova.scoretracker.ui.theme.Cinzel
@@ -99,6 +101,8 @@ fun MagicScreen(
 
     var showDraw by remember { mutableStateOf(false) }
     var showConfig by remember { mutableStateOf(false) }
+    val askReset = rememberResetConfirm { repo.update { AppActions.magicReset(it) } }
+    val askFinish = rememberFinishConfirm { repo.update { AppActions.magicFinish(it) } }
     var editLife by remember { mutableStateOf(false) }
     var colorForIndex by remember { mutableIntStateOf(-1) }
 
@@ -107,7 +111,7 @@ fun MagicScreen(
             life = game.startingLife,
             commander = game.commander,
             onEditLife = { editLife = true },
-            onReset = { repo.update { AppActions.magicReset(it) } },
+            onReset = { askReset() },
             onShuffle = { showDraw = true },
             onConfig = { showConfig = true },
         )
@@ -157,7 +161,7 @@ fun MagicScreen(
             count = players.size,
             commander = game.commander,
             onApply = { count, commander -> repo.update { AppActions.magicConfigure(it, count, commander) } },
-            onFinish = { repo.update { AppActions.magicFinish(it) } },
+            onFinish = { askFinish() },
             onClose = { showConfig = false },
         )
     }
